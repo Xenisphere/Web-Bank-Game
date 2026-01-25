@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bank - Dice Game</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      text-align: center;
+      color: #667eea;
+      margin-bottom: 30px;
+      font-size: 2.5em;
+    }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    
+    /* Join/Create Screen */
+    .join-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    input {
+      padding: 15px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      outline: none;
+      transition: border 0.3s;
+    }
+    input:focus { border-color: #667eea; }
+    button {
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: white;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+    .btn-success { background: #10b981; }
+    .btn-success:hover { background: #059669; }
+    .btn-danger { background: #ef4444; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-secondary { background: #6b7280; }
+    .btn-secondary:hover { background: #4b5563; }
+    
+    /* Waiting Room */
+    .room-code {
+      text-align: center;
+      margin: 20px 0;
+      padding: 20px;
+      background: #f3f4f6;
+      border-radius: 10px;
+    }
+    .room-code h2 { color: #667eea; font-size: 3em; letter-spacing: 5px; }
+    .player-list {
+      margin: 20px 0;
+      padding: 20px;
+      background: #f9fafb;
+      border-radius: 10px;
+    }
+    .player-item {
+      padding: 10px;
+      margin: 5px 0;
+      background: white;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    /* Game Screen */
+    .game-header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 20px;
+      background: #f3f4f6;
+      border-radius: 10px;
+    }
+    .round-info { font-size: 1.2em; color: #6b7280; margin-bottom: 10px; }
+    .shared-score {
+      font-size: 4em;
+      font-weight: bold;
+      color: #667eea;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    .roll-count { color: #6b7280; margin-top: 5px; }
+    
+    .players-grid {
+      display: grid;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .player-card {
+      padding: 15px;
+      background: #f9fafb;
+      border-radius: 10px;
+      border-left: 4px solid #ddd;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+    .player-card.active { border-left-color: #667eea; background: #ede9fe; }
+    .player-card.banked { border-left-color: #10b981; background: #d1fae5; }
+    .player-name { font-weight: bold; font-size: 1.1em; }
+    .player-scores { font-size: 0.9em; color: #6b7280; }
+    .player-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge {
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 0.8em;
+      font-weight: bold;
+    }
+    .badge-success { background: #10b981; color: white; }
+    .badge-info { background: #3b82f6; color: white; }
+    
+    .action-area {
+      margin: 20px 0;
+      padding: 20px;
+      background: #f3f4f6;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .dice-input {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 15px 0;
+    }
+    .dice-input input {
+      width: 80px;
+      text-align: center;
+      font-size: 2em;
+      font-weight: bold;
+    }
+    .host-controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    
+    .error-message {
+      background: #fee2e2;
+      color: #dc2626;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+      text-align: center;
+    }
+    
+    /* End Screen */
+    .winner-announcement {
+      text-align: center;
+      padding: 30px;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      border-radius: 10px;
+      margin: 20px 0;
+      color: white;
+    }
+    .winner-announcement h2 { font-size: 2.5em; margin-bottom: 10px; }
+    .final-scores {
+      margin: 20px 0;
+    }
+    .score-item {
+      padding: 15px;
+      margin: 10px 0;
+      background: #f9fafb;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.2em;
+    }
+    .score-item:first-child {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: white;
+      font-weight: bold;
+      font-size: 1.5em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎲 Bank</h1>
+    
+    <!-- Join/Create Screen -->
+    <div id="joinScreen" class="screen active">
+      <div class="join-controls">
+        <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+        <button class="btn-primary" onclick="createRoom()">Create New Game</button>
+        <div style="text-align: center; margin: 10px 0;">— OR —</div>
+        <input type="text" id="roomCodeInput" placeholder="Enter room code" maxlength="4" style="text-transform: uppercase;">
+        <button class="btn-secondary" onclick="joinRoom()">Join Game</button>
+      </div>
+      <div id="errorMsg" class="error-message" style="display: none;"></div>
+    </div>
+    
+    <!-- Waiting Room -->
+    <div id="waitingScreen" class="screen">
+      <div class="room-code">
+        <p>Room Code</p>
+        <h2 id="displayRoomCode"></h2>
+        <p style="margin-top: 10px; color: #6b7280;">Share this code with friends!</p>
+      </div>
+      <div class="player-list">
+        <h3 style="margin-bottom: 15px;">Players</h3>
+        <div id="waitingPlayerList"></div>
+      </div>
+      <div style="text-align: center;">
+        <button id="startGameBtn" class="btn-success" onclick="startGame()" style="display: none;">Start Game</button>
+      </div>
+    </div>
+    
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen">
+      <div class="game-header">
+        <div class="round-info">Round <span id="currentRound">1</span> / <span id="totalRounds">20</span></div>
+        <div class="shared-score" id="sharedScore">0</div>
+        <div class="roll-count">Roll <span id="rollCount">0</span></div>
+      </div>
+      
+      <div class="players-grid" id="playerCards"></div>
+      
+      <div class="action-area">
+        <div id="yourTurnArea" style="display: none;">
+          <h3>Your Turn!</h3>
+          <div class="dice-input">
+            <input type="number" id="die1" min="1" max="6" placeholder="Die 1">
+            <input type="number" id="die2" min="1" max="6" placeholder="Die 2">
+          </div>
+          <button class="btn-primary" onclick="rollDice()">Submit Roll</button>
+        </div>
+        
+        <div id="bankArea" style="display: none;">
+          <button class="btn-success" onclick="bank()">🏦 Bank Now</button>
+        </div>
+        
+        <div id="waitingArea">
+          <p style="color: #6b7280;">Waiting for <span id="currentPlayerName"></span>...</p>
+        </div>
+      </div>
+      
+      <div class="host-controls" id="hostControls" style="display: none;">
+        <button class="btn-secondary" onclick="nextTurn()">Next Turn →</button>
+        <button class="btn-danger" onclick="undo()">↶ Undo</button>
+      </div>
+    </div>
+    
+    <!-- End Screen -->
+    <div id="endScreen" class="screen">
+      <div class="winner-announcement">
+        <h2>🏆</h2>
+        <h2 id="winnerName">Winner</h2>
+      </div>
+      <div class="final-scores" id="finalScores"></div>
+      <div style="text-align: center; margin-top: 20px;">
+        <button class="btn-primary" onclick="location.reload()">New Game</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let gameState = null;
+    let myId = null;
+    let isHost = false;
+
+    // Join/Create functions
+    function createRoom() {
+      const name = document.getElementById('playerName').value.trim();
+      if (!name) {
+        showError('Please enter your name');
+        return;
+      }
+      socket.emit('create_room', { playerName: name });
+    }
+
+    function joinRoom() {
+      const name = document.getElementById('playerName').value.trim();
+      const code = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+      if (!name || !code) {
+        showError('Please enter your name and room code');
+        return;
+      }
+      socket.emit('join_room', { roomCode: code, playerName: name });
+    }
+
+    function startGame() {
+      socket.emit('start_game');
+    }
+
+    // Game actions
+    function rollDice() {
+      const die1 = parseInt(document.getElementById('die1').value);
+      const die2 = parseInt(document.getElementById('die2').value);
+      
+      if (!die1 || !die2 || die1 < 1 || die1 > 6 || die2 < 1 || die2 > 6) {
+        alert('Please enter valid dice values (1-6)');
+        return;
+      }
+      
+      socket.emit('roll_dice', { die1, die2 });
+      document.getElementById('die1').value = '';
+      document.getElementById('die2').value = '';
+    }
+
+    function bank() {
+      socket.emit('bank');
+    }
+
+    function nextTurn() {
+      socket.emit('next_turn');
+    }
+
+    function undo() {
+      socket.emit('undo');
+    }
+
+    // Socket listeners
+    socket.on('room_created', ({ roomCode, playerId }) => {
+      myId = playerId;
+      isHost = true;
+      document.getElementById('displayRoomCode').textContent = roomCode;
+      showScreen('waitingScreen');
+    });
+
+    socket.on('game_state_update', (room) => {
+      gameState = room;
+      myId = myId || socket.id;
+      isHost = room.hostId === myId;
+      
+      if (room.gameState.status === 'waiting') {
+        updateWaitingRoom(room);
+      } else if (room.gameState.status === 'playing') {
+        updateGameScreen(room);
+      } else if (room.gameState.status === 'finished') {
+        updateEndScreen(room);
+      }
+    });
+
+    socket.on('error', ({ message }) => {
+      showError(message);
+    });
+
+    // UI update functions
+    function updateWaitingRoom(room) {
+      showScreen('waitingScreen');
+      document.getElementById('displayRoomCode').textContent = room.roomCode;
+      
+      const list = document.getElementById('waitingPlayerList');
+      list.innerHTML = room.players.map((p, i) => `
+        <div class="player-item">
+          <span>${p.name} ${p.id === room.hostId ? '(Host)' : ''}</span>
+        </div>
+      `).join('');
+      
+      document.getElementById('startGameBtn').style.display = isHost ? 'block' : 'none';
+    }
+
+    function updateGameScreen(room) {
+      showScreen('gameScreen');
+      
+      document.getElementById('currentRound').textContent = room.gameState.currentRound;
+      document.getElementById('totalRounds').textContent = room.gameState.totalRounds;
+      document.getElementById('sharedScore').textContent = room.gameState.sharedRoundScore;
+      document.getElementById('rollCount').textContent = room.gameState.rollCount;
+      
+      const currentPlayer = room.players[room.gameState.currentTurnIndex];
+      document.getElementById('currentPlayerName').textContent = currentPlayer.name;
+      
+      // Player cards
+      const cardsHtml = room.players.map(p => {
+        const isCurrent = p.id === currentPlayer.id;
+        const projectedScore = p.bankedThisRound ? p.lockedScore : p.lockedScore + room.gameState.sharedRoundScore;
+        
+        return `
+          <div class="player-card ${isCurrent ? 'active' : ''} ${p.bankedThisRound ? 'banked' : ''}">
+            <div>
+              <div class="player-name">${p.name}</div>
+              <div class="player-scores">
+                Locked: ${p.lockedScore} | Projected: ${projectedScore}
+              </div>
+            </div>
+            <div class="player-status">
+              ${p.bankedThisRound ? '<span class="badge badge-success">BANKED</span>' : ''}
+              ${isCurrent ? '<span class="badge badge-info">TURN</span>' : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('playerCards').innerHTML = cardsHtml;
+      
+      // Action area
+      const isMyTurn = currentPlayer.id === myId;
+      const canBank = !room.players.find(p => p.id === myId).bankedThisRound && 
+                      room.gameState.rollCount >= 3 && 
+                      room.gameState.roundActive;
+      
+      document.getElementById('yourTurnArea').style.display = isMyTurn && room.gameState.roundActive ? 'block' : 'none';
+      document.getElementById('bankArea').style.display = canBank ? 'block' : 'none';
+      document.getElementById('waitingArea').style.display = !isMyTurn ? 'block' : 'none';
+      
+      // Host controls
+      document.getElementById('hostControls').style.display = isHost ? 'flex' : 'none';
+    }
+
+    function updateEndScreen(room) {
+      showScreen('endScreen');
+      
+      const sorted = [...room.players].sort((a, b) => b.lockedScore - a.lockedScore);
+      document.getElementById('winnerName').textContent = sorted[0].name + ' Wins!';
+      
+      const scoresHtml = sorted.map((p, i) => `
+        <div class="score-item">
+          <span>${i + 1}. ${p.name}</span>
+          <span>${p.lockedScore} points</span>
+        </div>
+      `).join('');
+      document.getElementById('finalScores').innerHTML = scoresHtml;
+    }
+
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    function showError(msg) {
+      const errorEl = document.getElementById('errorMsg');
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+      setTimeout(() => errorEl.style.display = 'none', 3000);
+    }
+  </script>
+</body>
+</html>
