@@ -80,6 +80,12 @@ function processDiceRoll(room, die1, die2) {
   return { newScore, roundDead, isDoubles };
 }
 
+// Helper: Advance to next turn
+function advanceTurn(room) {
+  room.gameState.currentTurnIndex = 
+    (room.gameState.currentTurnIndex + 1) % room.players.length;
+}
+
 // Socket.IO connection handler
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
@@ -96,7 +102,8 @@ io.on('connection', (socket) => {
         lockedScore: 0,
         bankedThisRound: false,
         eliminated: false,
-        turnOrder: 0
+        turnOrder: 0,
+        usePhysicalDice: false
       }],
       gameState: createGameState(),
       history: []
@@ -130,7 +137,8 @@ io.on('connection', (socket) => {
       lockedScore: 0,
       bankedThisRound: false,
       eliminated: false,
-      turnOrder: room.players.length
+      turnOrder: room.players.length,
+      usePhysicalDice: false
     };
     
     room.players.push(player);
@@ -138,6 +146,15 @@ io.on('connection', (socket) => {
     socket.roomCode = roomCode;
     
     io.to(roomCode).emit('game_state_update', room);
+  });
+  
+  // Set total rounds
+  socket.on('set_rounds', ({ totalRounds }) => {
+    const room = rooms.get(socket.roomCode);
+    if (!room || room.hostId !== socket.id || room.gameState.status !== 'waiting') return;
+    
+    room.gameState.totalRounds = totalRounds;
+    io.to(socket.roomCode).emit('game_state_update', room);
   });
   
   // Start game
@@ -162,8 +179,8 @@ io.on('connection', (socket) => {
     io.to(socket.roomCode).emit('game_state_update', room);
   });
   
-  // Roll dice
-  socket.on('roll_dice', ({ die1, die2 }) => {
+  // Roll dice (virtual)
+  socket.on('roll_dice', () => {
     const room = rooms.get(socket.roomCode);
     if (!room || room.gameState.status !== 'playing') return;
     
@@ -180,6 +197,10 @@ io.on('connection', (socket) => {
     
     saveHistory(room);
     
+    // Roll two dice
+    const die1 = Math.floor(Math.random() * 6) + 1;
+    const die2 = Math.floor(Math.random() * 6) + 1;
+    
     const { newScore, roundDead } = processDiceRoll(room, die1, die2);
     
     room.gameState.sharedRoundScore = newScore;
@@ -187,12 +208,78 @@ io.on('connection', (socket) => {
     
     if (roundDead) {
       room.gameState.roundActive = false;
-      // Everyone who hasn't banked gets 0
+      // Everyone who banked gets their score
       room.players.forEach(p => {
         if (p.bankedThisRound) {
-          p.lockedScore += room.gameState.sharedRoundScore;
+          p.lockedScore += newScore; // This will be 0 since round died
         }
       });
+    } else {
+      // Auto-advance to next turn
+      advanceTurn(room);
+    }
+    
+    io.to(socket.roomCode).emit('game_state_update', room);
+  });
+  
+  // Submit physical dice
+  socket.on('submit_physical_dice', ({ value, isDoubles }) => {
+    const room = rooms.get(socket.roomCode);
+    if (!room || room.gameState.status !== 'playing') return;
+    
+    const currentPlayer = room.players[room.gameState.currentTurnIndex];
+    if (currentPlayer.id !== socket.id) {
+      socket.emit('error', { message: 'Not your turn' });
+      return;
+    }
+    
+    if (!room.gameState.roundActive) {
+      socket.emit('error', { message: 'Round is over' });
+      return;
+    }
+    
+    saveHistory(room);
+    
+    // Mark player as using physical dice
+    currentPlayer.usePhysicalDice = true;
+    
+    const { rollCount, sharedRoundScore } = room.gameState;
+    let newScore = sharedRoundScore;
+    let roundDead = false;
+    
+    if (rollCount < 3) {
+      // First 3 rolls: value is 2-12
+      if (value === 7) {
+        newScore += 70;
+      } else {
+        newScore += value;
+      }
+    } else {
+      // After 3 rolls
+      if (value === 7) {
+        roundDead = true;
+        newScore = 0;
+      } else if (isDoubles) {
+        newScore *= 2;
+      } else {
+        newScore += value;
+      }
+    }
+    
+    room.gameState.sharedRoundScore = newScore;
+    room.gameState.rollCount++;
+    
+    if (roundDead) {
+      room.gameState.roundActive = false;
+      // Everyone who banked gets their score (will be 0)
+      room.players.forEach(p => {
+        if (p.bankedThisRound) {
+          p.lockedScore += newScore;
+        }
+      });
+    } else {
+      // Auto-advance to next turn
+      advanceTurn(room);
     }
     
     io.to(socket.roomCode).emit('game_state_update', room);
@@ -212,6 +299,9 @@ io.on('connection', (socket) => {
     if (!player || player.bankedThisRound) return;
     
     saveHistory(room);
+    
+    // Add current round score to locked score
+    player.lockedScore += room.gameState.sharedRoundScore;
     player.bankedThisRound = true;
     
     io.to(socket.roomCode).emit('game_state_update', room);
@@ -228,12 +318,14 @@ io.on('connection', (socket) => {
     const allBanked = room.players.every(p => p.bankedThisRound);
     
     if (!room.gameState.roundActive || allBanked) {
-      // End round, lock scores
+      // End round, lock scores for those who haven't banked yet
       room.players.forEach(p => {
-        if (p.bankedThisRound && room.gameState.roundActive) {
+        if (!p.bankedThisRound && room.gameState.roundActive) {
+          // They didn't bank, so they get the current score
           p.lockedScore += room.gameState.sharedRoundScore;
         }
         p.bankedThisRound = false;
+        p.usePhysicalDice = false;
       });
       
       // Start next round
@@ -248,8 +340,7 @@ io.on('connection', (socket) => {
       }
     } else {
       // Just move to next player
-      room.gameState.currentTurnIndex = 
-        (room.gameState.currentTurnIndex + 1) % room.players.length;
+      advanceTurn(room);
     }
     
     io.to(socket.roomCode).emit('game_state_update', room);
