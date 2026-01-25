@@ -529,17 +529,32 @@
       // Action area
       const isMyTurn = currentPlayer.id === myId;
       const myPlayer = room.players.find(p => p.id === myId);
+      
+      // Can't roll if you've already banked
+      const canRoll = isMyTurn && room.gameState.roundActive && !myPlayer.bankedThisRound;
+      
+      // Can bank if: not banked yet, at least 3 rolls done, round is still active
       const canBank = myPlayer && !myPlayer.bankedThisRound && 
                       room.gameState.rollCount >= 3 && 
                       room.gameState.roundActive;
       
       // Show/hide main action areas
-      document.getElementById('yourTurnArea').style.display = isMyTurn && room.gameState.roundActive ? 'block' : 'none';
+      document.getElementById('yourTurnArea').style.display = canRoll ? 'block' : 'none';
       document.getElementById('bankArea').style.display = canBank ? 'block' : 'none';
-      document.getElementById('waitingArea').style.display = !isMyTurn ? 'block' : 'none';
+      
+      // Show waiting message if it's not your turn OR you've already banked
+      const shouldWait = !isMyTurn || myPlayer.bankedThisRound;
+      document.getElementById('waitingArea').style.display = shouldWait ? 'block' : 'none';
+      
+      // Update waiting message
+      if (myPlayer.bankedThisRound) {
+        document.getElementById('waitingArea').innerHTML = '<p style="color: #10b981; font-weight: bold;">You\'ve banked! Waiting for others...</p>';
+      } else {
+        document.getElementById('waitingArea').innerHTML = `<p style="color: #6b7280;">Waiting for <span id="currentPlayerName">${currentPlayer.name}</span>...</p>`;
+      }
       
       // Reset to virtual dice for new turn unless player explicitly used physical dice
-      if (isMyTurn && room.gameState.roundActive) {
+      if (canRoll) {
         if (!myPlayer.usePhysicalDice) {
           usePhysicalDice = false;
         } else {
