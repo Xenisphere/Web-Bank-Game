@@ -80,10 +80,25 @@ function processDiceRoll(room, die1, die2) {
   return { newScore, roundDead, isDoubles };
 }
 
-// Helper: Advance to next turn
+// Helper: Advance to next turn (skip banked players)
 function advanceTurn(room) {
-  room.gameState.currentTurnIndex = 
-    (room.gameState.currentTurnIndex + 1) % room.players.length;
+  const startIndex = room.gameState.currentTurnIndex;
+  let nextIndex = (startIndex + 1) % room.players.length;
+  
+  // Keep advancing until we find a player who hasn't banked
+  // or we've checked everyone
+  let attempts = 0;
+  while (room.players[nextIndex].bankedThisRound && attempts < room.players.length) {
+    nextIndex = (nextIndex + 1) % room.players.length;
+    attempts++;
+  }
+  
+  room.gameState.currentTurnIndex = nextIndex;
+  
+  // If everyone has banked, end the round
+  if (room.players.every(p => p.bankedThisRound)) {
+    room.gameState.roundActive = false;
+  }
 }
 
 // Socket.IO connection handler
@@ -303,6 +318,17 @@ io.on('connection', (socket) => {
     // Add current round score to locked score
     player.lockedScore += room.gameState.sharedRoundScore;
     player.bankedThisRound = true;
+    
+    // Check if all players have banked
+    if (room.players.every(p => p.bankedThisRound)) {
+      room.gameState.roundActive = false;
+    } else {
+      // If the current turn player just banked, advance to next non-banked player
+      const currentPlayer = room.players[room.gameState.currentTurnIndex];
+      if (currentPlayer.id === socket.id) {
+        advanceTurn(room);
+      }
+    }
     
     io.to(socket.roomCode).emit('game_state_update', room);
   });
