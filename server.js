@@ -30,7 +30,8 @@ function createGameState(totalRounds = 20) {
     roundActive: false,
     sharedRoundScore: 0,
     rollCount: 0,
-    currentTurnIndex: 0
+    currentTurnIndex: 0,
+    lastRoll: null
   };
 }
 
@@ -101,6 +102,7 @@ function startNewRound(room) {
 }
 
 // Helper: Advance to next turn (skip banked players)
+function advanceTurn(room) {
   const startIndex = room.gameState.currentTurnIndex;
   let nextIndex = (startIndex + 1) % room.players.length;
   
