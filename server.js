@@ -80,8 +80,27 @@ function processDiceRoll(room, die1, die2) {
   return { newScore, roundDead, isDoubles };
 }
 
+// Helper: Start new round
+function startNewRound(room) {
+  // Reset all players
+  room.players.forEach(p => {
+    p.bankedThisRound = false;
+    p.usePhysicalDice = false;
+  });
+  
+  // Increment round
+  room.gameState.currentRound++;
+  room.gameState.roundActive = true;
+  room.gameState.sharedRoundScore = 0;
+  room.gameState.rollCount = 0;
+  room.gameState.lastRoll = null;
+  
+  // Advance to next player (don't reset to 0)
+  room.gameState.currentTurnIndex = 
+    (room.gameState.currentTurnIndex + 1) % room.players.length;
+}
+
 // Helper: Advance to next turn (skip banked players)
-function advanceTurn(room) {
   const startIndex = room.gameState.currentTurnIndex;
   let nextIndex = (startIndex + 1) % room.players.length;
   
@@ -179,17 +198,7 @@ io.on('connection', (socket) => {
     
     saveHistory(room);
     room.gameState.status = 'playing';
-    room.gameState.currentRound = 1;
-    room.gameState.roundActive = true;
-    room.gameState.sharedRoundScore = 0;
-    room.gameState.rollCount = 0;
-    room.gameState.currentTurnIndex = 0;
-    
-    // Reset all players
-    room.players.forEach(p => {
-      p.bankedThisRound = false;
-      p.eliminated = false;
-    });
+    startNewRound(room);
     
     io.to(socket.roomCode).emit('game_state_update', room);
   });
@@ -215,6 +224,10 @@ io.on('connection', (socket) => {
     // Roll two dice
     const die1 = Math.floor(Math.random() * 6) + 1;
     const die2 = Math.floor(Math.random() * 6) + 1;
+    const total = die1 + die2;
+    
+    // Store the roll
+    room.gameState.lastRoll = { die1, die2, total };
     
     const { newScore, roundDead } = processDiceRoll(room, die1, die2);
     
@@ -223,12 +236,15 @@ io.on('connection', (socket) => {
     
     if (roundDead) {
       room.gameState.roundActive = false;
-      // Everyone who banked gets their score
+      // Everyone who banked gets their score (will be 0 since round died)
       room.players.forEach(p => {
         if (p.bankedThisRound) {
-          p.lockedScore += newScore; // This will be 0 since round died
+          p.lockedScore += newScore;
         }
       });
+      
+      // Don't auto-advance turn when round dies
+      // The next round will start from player 1
     } else {
       // Auto-advance to next turn
       advanceTurn(room);
@@ -257,6 +273,14 @@ io.on('connection', (socket) => {
     
     // Mark player as using physical dice
     currentPlayer.usePhysicalDice = true;
+    
+    // Store the roll (for physical dice, we don't know individual die values for non-doubles)
+    if (isDoubles) {
+      const dieValue = value / 2;
+      room.gameState.lastRoll = { die1: dieValue, die2: dieValue, total: value };
+    } else {
+      room.gameState.lastRoll = { die1: null, die2: null, total: value };
+    }
     
     const { rollCount, sharedRoundScore } = room.gameState;
     let newScore = sharedRoundScore;
@@ -292,6 +316,9 @@ io.on('connection', (socket) => {
           p.lockedScore += newScore;
         }
       });
+      
+      // Don't auto-advance turn when round dies
+      // The next round will start from player 1
     } else {
       // Auto-advance to next turn
       advanceTurn(room);
@@ -322,6 +349,17 @@ io.on('connection', (socket) => {
     // Check if all players have banked
     if (room.players.every(p => p.bankedThisRound)) {
       room.gameState.roundActive = false;
+      
+      // Auto-advance to next round after brief delay
+      setTimeout(() => {
+        if (room.gameState.currentRound < room.gameState.totalRounds) {
+          startNewRound(room);
+          io.to(socket.roomCode).emit('game_state_update', room);
+        } else {
+          room.gameState.status = 'finished';
+          io.to(socket.roomCode).emit('game_state_update', room);
+        }
+      }, 2000);
     } else {
       // If the current turn player just banked, advance to next non-banked player
       const currentPlayer = room.players[room.gameState.currentTurnIndex];
@@ -340,7 +378,7 @@ io.on('connection', (socket) => {
     
     saveHistory(room);
     
-    // If round is dead or all players banked, end round
+    // If round is dead or all players banked, end round and start new one
     const allBanked = room.players.every(p => p.bankedThisRound);
     
     if (!room.gameState.roundActive || allBanked) {
@@ -350,17 +388,11 @@ io.on('connection', (socket) => {
           // They didn't bank, so they get the current score
           p.lockedScore += room.gameState.sharedRoundScore;
         }
-        p.bankedThisRound = false;
-        p.usePhysicalDice = false;
       });
       
-      // Start next round
+      // Start next round or end game
       if (room.gameState.currentRound < room.gameState.totalRounds) {
-        room.gameState.currentRound++;
-        room.gameState.roundActive = true;
-        room.gameState.sharedRoundScore = 0;
-        room.gameState.rollCount = 0;
-        room.gameState.currentTurnIndex = 0;
+        startNewRound(room);
       } else {
         room.gameState.status = 'finished';
       }
