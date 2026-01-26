@@ -141,6 +141,67 @@
     }
     .roll-count { color: #6b7280; margin-top: 5px; }
     
+    .last-roll {
+      margin-top: 15px;
+      padding: 15px;
+      background: white;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+    }
+    .dice-display {
+      width: 60px;
+      height: 60px;
+      background: white;
+      border: 3px solid #667eea;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2em;
+      font-weight: bold;
+      color: #667eea;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .dice-separator {
+      font-size: 2em;
+      color: #6b7280;
+    }
+    .dice-total {
+      padding: 10px 20px;
+      background: #667eea;
+      color: white;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+    
+    .sort-controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+    .sort-btn {
+      padding: 8px 15px;
+      font-size: 0.9em;
+      background: #e5e7eb;
+      color: #374151;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .sort-btn.active {
+      background: #667eea;
+      color: white;
+    }
+    .sort-btn:hover:not(.active) {
+      background: #d1d5db;
+    }
+    
     .players-grid {
       display: grid;
       gap: 10px;
@@ -283,6 +344,19 @@
         <div class="round-info">Round <span id="currentRound">1</span> / <span id="totalRounds">20</span></div>
         <div class="shared-score" id="sharedScore">0</div>
         <div class="roll-count">Roll <span id="rollCount">0</span></div>
+        <div class="last-roll" id="lastRollDisplay" style="display: none;">
+          <div class="dice-display" id="die1Display">?</div>
+          <div class="dice-separator">+</div>
+          <div class="dice-display" id="die2Display">?</div>
+          <div class="dice-separator">=</div>
+          <div class="dice-total" id="diceTotal">?</div>
+        </div>
+      </div>
+      
+      <div class="sort-controls">
+        <button class="sort-btn active" onclick="setSortMode('turn')" id="sortTurnBtn">Turn Order</button>
+        <button class="sort-btn" onclick="setSortMode('locked')" id="sortLockedBtn">By Locked Score</button>
+        <button class="sort-btn" onclick="setSortMode('projected')" id="sortProjectedBtn">By Projected Score</button>
       </div>
       
       <div class="players-grid" id="playerCards"></div>
@@ -341,6 +415,7 @@
     let myId = null;
     let isHost = false;
     let usePhysicalDice = false;
+    let sortMode = 'turn'; // 'turn', 'locked', or 'projected'
 
     // Join/Create functions
     function createRoom() {
@@ -369,6 +444,20 @@
 
     function startGame() {
       socket.emit('start_game');
+    }
+
+    function setSortMode(mode) {
+      sortMode = mode;
+      
+      // Update button states
+      document.getElementById('sortTurnBtn').classList.toggle('active', mode === 'turn');
+      document.getElementById('sortLockedBtn').classList.toggle('active', mode === 'locked');
+      document.getElementById('sortProjectedBtn').classList.toggle('active', mode === 'projected');
+      
+      // Re-render player list with new sort
+      if (gameState) {
+        updateGameScreen(gameState);
+      }
     }
 
     function toggleInputMode() {
