@@ -417,6 +417,48 @@
     let isHost = false;
     let usePhysicalDice = false;
     let sortMode = 'turn'; // 'turn', 'locked', or 'projected'
+    let currentRoomCode = null;
+
+    // Load saved session from localStorage
+    function loadSession() {
+      const savedSession = localStorage.getItem('bankGameSession');
+      if (savedSession) {
+        const session = JSON.parse(savedSession);
+        return session;
+      }
+      return null;
+    }
+
+    // Save session to localStorage
+    function saveSession(roomCode, playerId) {
+      localStorage.setItem('bankGameSession', JSON.stringify({
+        roomCode,
+        playerId,
+        timestamp: Date.now()
+      }));
+    }
+
+    // Clear session
+    function clearSession() {
+      localStorage.removeItem('bankGameSession');
+    }
+
+    // Try to reconnect on load
+    window.addEventListener('load', () => {
+      const session = loadSession();
+      if (session) {
+        // Check if session is less than 5 minutes old
+        if (Date.now() - session.timestamp < 300000) {
+          console.log('Attempting to reconnect...', session);
+          socket.emit('reconnect_player', {
+            roomCode: session.roomCode,
+            playerId: session.playerId
+          });
+        } else {
+          clearSession();
+        }
+      }
+    });
 
     // Join/Create functions
     function createRoom() {
@@ -545,8 +587,16 @@
       console.log('Room created, my ID:', playerId);
       myId = playerId;
       isHost = true;
+      currentRoomCode = roomCode;
+      saveSession(roomCode, playerId);
       document.getElementById('displayRoomCode').textContent = roomCode;
       showScreen('waitingScreen');
+    });
+
+    socket.on('reconnected', ({ playerId }) => {
+      console.log('Successfully reconnected as:', playerId);
+      myId = playerId;
+      // Game state update will come next and show the correct screen
     });
 
     socket.on('game_state_update', (room) => {
@@ -554,10 +604,16 @@
       console.log('My ID:', myId, 'Socket ID:', socket.id);
       
       gameState = room;
+      currentRoomCode = room.roomCode;
       
       // Set myId if not already set
       if (!myId) {
         myId = socket.id;
+      }
+      
+      // Save session when joining a room
+      if (room.players.find(p => p.id === myId)) {
+        saveSession(room.roomCode, myId);
       }
       
       isHost = room.hostId === myId;
@@ -636,11 +692,12 @@
       const cardsHtml = sortedPlayers.map((p, index) => {
         const isCurrent = p.id === currentPlayer.id;
         const projectedScore = p.bankedThisRound ? p.lockedScore : p.lockedScore + room.gameState.sharedRoundScore;
+        const isDisconnected = p.disconnected;
         
         return `
           <div class="player-card ${isCurrent ? 'active' : ''} ${p.bankedThisRound ? 'banked' : ''}">
             <div>
-              <div class="player-name">${sortMode === 'turn' ? '' : (index + 1) + '. '}${p.name}</div>
+              <div class="player-name">${sortMode === 'turn' ? '' : (index + 1) + '. '}${p.name}${isDisconnected ? ' (Disconnected)' : ''}</div>
               <div class="player-scores">
                 Locked: ${p.lockedScore} | Projected: ${projectedScore}
               </div>
@@ -648,6 +705,7 @@
             <div class="player-status">
               ${p.bankedThisRound ? '<span class="badge badge-success">BANKED</span>' : ''}
               ${isCurrent ? '<span class="badge badge-info">TURN</span>' : ''}
+              ${isDisconnected ? '<span class="badge" style="background: #ef4444; color: white;">OFFLINE</span>' : ''}
             </div>
           </div>
         `;
