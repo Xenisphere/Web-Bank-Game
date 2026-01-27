@@ -374,10 +374,13 @@
             <button class="btn-primary" onclick="rollDice()" style="font-size: 1.5em; padding: 20px 40px;">🎲 Roll Dice</button>
           </div>
           
-          <!-- Physical dice input -->
+          <!-- Physical dice prompt -->
           <div id="physicalDiceArea" style="display: none;">
-            <p style="margin-bottom: 10px; color: #6b7280;">Enter your roll:</p>
-            <div class="dice-buttons" id="diceButtons"></div>
+            <div style="padding: 30px; background: white; border-radius: 10px; border: 2px dashed #667eea;">
+              <p style="font-size: 1.5em; color: #667eea; margin-bottom: 15px; font-weight: bold;">🎲 Roll Your Physical Dice</p>
+              <p style="color: #6b7280; margin-bottom: 20px;">Roll the dice and enter your result below:</p>
+              <div class="dice-buttons" id="diceButtons"></div>
+            </div>
           </div>
         </div>
         
@@ -415,7 +418,6 @@
     let gameState = null;
     let myId = null;
     let isHost = false;
-    let usePhysicalDice = false;
     let sortMode = 'turn'; // 'turn', 'locked', or 'projected'
     let currentRoomCode = null;
 
@@ -504,14 +506,18 @@
     }
 
     function toggleInputMode() {
-      usePhysicalDice = !usePhysicalDice;
-      updateInputMode();
+      socket.emit('toggle_dice_mode');
     }
 
     function updateInputMode() {
+      if (!gameState) return;
+      
+      const usePhysicalDice = gameState.gameState.usePhysicalDice;
       const virtualArea = document.getElementById('virtualDiceArea');
       const physicalArea = document.getElementById('physicalDiceArea');
       const toggleBtn = document.getElementById('toggleModeBtn');
+      
+      if (!toggleBtn) return; // Button might not exist yet
       
       if (usePhysicalDice) {
         virtualArea.style.display = 'none';
@@ -524,6 +530,12 @@
         virtualArea.style.display = 'block';
         physicalArea.style.display = 'none';
         toggleBtn.textContent = 'Use Physical Dice';
+      }
+      
+      // Show/hide toggle button for host only
+      const toggleModeDiv = document.querySelector('.toggle-input-mode');
+      if (toggleModeDiv) {
+        toggleModeDiv.style.display = isHost ? 'block' : 'none';
       }
     }
 
@@ -744,13 +756,8 @@
         document.getElementById('waitingArea').innerHTML = `<p style="color: #6b7280;">Waiting for ${currentPlayer.name}...</p>`;
       }
       
-      // Reset to virtual dice for new turn unless player explicitly used physical dice
+      // Update input mode based on game state
       if (canRoll) {
-        if (!myPlayer.usePhysicalDice) {
-          usePhysicalDice = false;
-        } else {
-          usePhysicalDice = true;
-        }
         updateInputMode();
       }
       
