@@ -376,10 +376,21 @@
           
           <!-- Physical dice prompt -->
           <div id="physicalDiceArea" style="display: none;">
-            <div style="padding: 30px; background: white; border-radius: 10px; border: 2px dashed #667eea;">
-              <p style="font-size: 1.5em; color: #667eea; margin-bottom: 15px; font-weight: bold;">🎲 Roll Your Physical Dice</p>
-              <p style="color: #6b7280; margin-bottom: 20px;">Roll the dice and enter your result below:</p>
-              <div class="dice-buttons" id="diceButtons"></div>
+            <!-- For host: show input buttons -->
+            <div id="physicalDiceHost" style="display: none;">
+              <div style="padding: 20px; background: white; border-radius: 10px; border: 2px dashed #667eea;">
+                <p style="font-size: 1.3em; color: #667eea; margin-bottom: 15px; font-weight: bold;">Enter the dice roll:</p>
+                <div class="dice-buttons" id="diceButtons"></div>
+              </div>
+            </div>
+            
+            <!-- For regular players: simple message -->
+            <div id="physicalDicePlayer" style="display: none;">
+              <div style="padding: 40px; background: white; border-radius: 10px; border: 3px solid #667eea; text-align: center;">
+                <p style="font-size: 2em; color: #667eea; margin-bottom: 10px;">🎲</p>
+                <p style="font-size: 1.5em; color: #667eea; font-weight: bold; margin-bottom: 10px;">Roll the Dice!</p>
+                <p style="color: #6b7280; font-size: 1.1em;">Wait for the host to enter your result</p>
+              </div>
             </div>
           </div>
         </div>
@@ -515,6 +526,8 @@
       const usePhysicalDice = gameState.gameState.usePhysicalDice;
       const virtualArea = document.getElementById('virtualDiceArea');
       const physicalArea = document.getElementById('physicalDiceArea');
+      const physicalHost = document.getElementById('physicalDiceHost');
+      const physicalPlayer = document.getElementById('physicalDicePlayer');
       const toggleBtn = document.getElementById('toggleModeBtn');
       
       if (!toggleBtn) return; // Button might not exist yet
@@ -522,10 +535,18 @@
       if (usePhysicalDice) {
         virtualArea.style.display = 'none';
         physicalArea.style.display = 'block';
-        toggleBtn.textContent = 'Use Virtual Dice';
-        if (gameState) {
+        
+        // Show appropriate physical dice UI based on role
+        if (isHost) {
+          physicalHost.style.display = 'block';
+          physicalPlayer.style.display = 'none';
           renderDiceButtons();
+        } else {
+          physicalHost.style.display = 'none';
+          physicalPlayer.style.display = 'block';
         }
+        
+        toggleBtn.textContent = 'Use Virtual Dice';
       } else {
         virtualArea.style.display = 'block';
         physicalArea.style.display = 'none';
