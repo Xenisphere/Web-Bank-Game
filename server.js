@@ -200,7 +200,19 @@ io.on('connection', (socket) => {
     
     saveHistory(room);
     room.gameState.status = 'playing';
-    startNewRound(room);
+    
+    // Initialize first round manually without advancing turn
+    room.players.forEach(p => {
+      p.bankedThisRound = false;
+      p.usePhysicalDice = false;
+    });
+    
+    room.gameState.currentRound = 1;
+    room.gameState.roundActive = true;
+    room.gameState.sharedRoundScore = 0;
+    room.gameState.rollCount = 0;
+    room.gameState.lastRoll = null;
+    room.gameState.currentTurnIndex = 0; // Start with first player
     
     io.to(socket.roomCode).emit('game_state_update', room);
   });
