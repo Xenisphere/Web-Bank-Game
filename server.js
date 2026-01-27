@@ -83,8 +83,11 @@ function processDiceRoll(room, die1, die2) {
 
 // Helper: Start new round
 function startNewRound(room) {
-  // Note: Players are already unbanked when round ended
-  // This just increments the round and resets scores
+  // Always unbank everyone at the start of a new round (safety check)
+  room.players.forEach(p => {
+    p.bankedThisRound = false;
+    p.usePhysicalDice = false;
+  });
   
   // Increment round
   room.gameState.currentRound++;
@@ -197,7 +200,19 @@ io.on('connection', (socket) => {
     
     saveHistory(room);
     room.gameState.status = 'playing';
-    startNewRound(room);
+    
+    // Initialize first round manually without advancing turn
+    room.players.forEach(p => {
+      p.bankedThisRound = false;
+      p.usePhysicalDice = false;
+    });
+    
+    room.gameState.currentRound = 1;
+    room.gameState.roundActive = true;
+    room.gameState.sharedRoundScore = 0;
+    room.gameState.rollCount = 0;
+    room.gameState.lastRoll = null;
+    room.gameState.currentTurnIndex = 0; // Start with first player
     
     io.to(socket.roomCode).emit('game_state_update', room);
   });
@@ -249,6 +264,7 @@ io.on('connection', (socket) => {
       advanceTurn(room);
     }
     
+    // Always send update to all players
     io.to(socket.roomCode).emit('game_state_update', room);
   });
   
@@ -323,6 +339,7 @@ io.on('connection', (socket) => {
       advanceTurn(room);
     }
     
+    // Always send update to all players
     io.to(socket.roomCode).emit('game_state_update', room);
   });
   
@@ -355,6 +372,9 @@ io.on('connection', (socket) => {
         p.usePhysicalDice = false;
       });
       
+      // Send update immediately so everyone sees they're unbanked
+      io.to(socket.roomCode).emit('game_state_update', room);
+      
       // Auto-advance to next round after brief delay
       setTimeout(() => {
         if (room.gameState.currentRound < room.gameState.totalRounds) {
@@ -371,9 +391,10 @@ io.on('connection', (socket) => {
       if (currentPlayer.id === socket.id) {
         advanceTurn(room);
       }
+      
+      // Always send update
+      io.to(socket.roomCode).emit('game_state_update', room);
     }
-    
-    io.to(socket.roomCode).emit('game_state_update', room);
   });
   
   // Next turn (host only)
@@ -398,18 +419,22 @@ io.on('connection', (socket) => {
         p.usePhysicalDice = false;
       });
       
+      // Send update to show everyone is unbanked
+      io.to(socket.roomCode).emit('game_state_update', room);
+      
       // Start next round or end game
       if (room.gameState.currentRound < room.gameState.totalRounds) {
         startNewRound(room);
+        io.to(socket.roomCode).emit('game_state_update', room);
       } else {
         room.gameState.status = 'finished';
+        io.to(socket.roomCode).emit('game_state_update', room);
       }
     } else {
       // Just move to next player
       advanceTurn(room);
+      io.to(socket.roomCode).emit('game_state_update', room);
     }
-    
-    io.to(socket.roomCode).emit('game_state_update', room);
   });
   
   // Undo (host only)
