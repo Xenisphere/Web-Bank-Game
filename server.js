@@ -372,19 +372,8 @@ io.on('connection', (socket) => {
         p.usePhysicalDice = false;
       });
       
-      // Send update immediately so everyone sees they're unbanked
+      // Send update immediately so everyone sees they're unbanked and round is over
       io.to(socket.roomCode).emit('game_state_update', room);
-      
-      // Auto-advance to next round after brief delay
-      setTimeout(() => {
-        if (room.gameState.currentRound < room.gameState.totalRounds) {
-          startNewRound(room);
-          io.to(socket.roomCode).emit('game_state_update', room);
-        } else {
-          room.gameState.status = 'finished';
-          io.to(socket.roomCode).emit('game_state_update', room);
-        }
-      }, 2000);
     } else {
       // If the current turn player just banked, advance to next non-banked player
       const currentPlayer = room.players[room.gameState.currentTurnIndex];
