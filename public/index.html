@@ -541,6 +541,7 @@
 
     // Socket listeners
     socket.on('room_created', ({ roomCode, playerId }) => {
+      console.log('Room created, my ID:', playerId); // Debug log
       myId = playerId;
       isHost = true;
       document.getElementById('displayRoomCode').textContent = roomCode;
@@ -548,8 +549,16 @@
     });
 
     socket.on('game_state_update', (room) => {
+      console.log('Game state update received:', room); // Debug log
+      console.log('My ID:', myId, 'Socket ID:', socket.id); // Debug log
+      
       gameState = room;
-      myId = myId || socket.id;
+      
+      // Set myId if not already set
+      if (!myId) {
+        myId = socket.id;
+      }
+      
       isHost = room.hostId === myId;
       
       if (room.gameState.status === 'waiting') {
