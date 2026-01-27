@@ -1,692 +1,476 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bank - Dice Game</title>
-  <script src="/socket.io/socket.io.js"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      padding: 20px;
-      color: #333;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    h1 {
-      text-align: center;
-      color: #667eea;
-      margin-bottom: 30px;
-      font-size: 2.5em;
-    }
-    .screen { display: none; }
-    .screen.active { display: block; }
-    
-    /* Join/Create Screen */
-    .join-controls {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      max-width: 400px;
-      margin: 0 auto;
-    }
-    input {
-      padding: 15px;
-      font-size: 16px;
-      border: 2px solid #ddd;
-      border-radius: 10px;
-      outline: none;
-      transition: border 0.3s;
-    }
-    input:focus { border-color: #667eea; }
-    button {
-      padding: 15px 30px;
-      font-size: 16px;
-      font-weight: bold;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.3s;
-      color: white;
-    }
-    button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
-    .btn-success { background: #10b981; }
-    .btn-success:hover:not(:disabled) { background: #059669; }
-    .btn-danger { background: #ef4444; }
-    .btn-danger:hover:not(:disabled) { background: #dc2626; }
-    .btn-secondary { background: #6b7280; }
-    .btn-secondary:hover:not(:disabled) { background: #4b5563; }
-    .btn-dice { 
-      background: #3b82f6;
-      min-width: 60px;
-      padding: 12px 20px;
-      font-size: 1.2em;
-    }
-    .btn-dice:hover:not(:disabled) { background: #2563eb; }
-    
-    /* Waiting Room */
-    .room-code {
-      text-align: center;
-      margin: 20px 0;
-      padding: 20px;
-      background: #f3f4f6;
-      border-radius: 10px;
-    }
-    .room-code h2 { color: #667eea; font-size: 3em; letter-spacing: 5px; }
-    .player-list {
-      margin: 20px 0;
-      padding: 20px;
-      background: #f9fafb;
-      border-radius: 10px;
-    }
-    .player-item {
-      padding: 10px;
-      margin: 5px 0;
-      background: white;
-      border-radius: 5px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .rounds-config {
-      margin: 20px 0;
-      padding: 20px;
-      background: #f3f4f6;
-      border-radius: 10px;
-      text-align: center;
-    }
-    .rounds-config label {
-      display: block;
-      margin-bottom: 10px;
-      font-weight: bold;
-      color: #667eea;
-    }
-    .rounds-config input {
-      width: 100px;
-      text-align: center;
-      font-size: 1.5em;
-    }
-    
-    /* Game Screen */
-    .game-header {
-      text-align: center;
-      margin-bottom: 20px;
-      padding: 20px;
-      background: #f3f4f6;
-      border-radius: 10px;
-    }
-    .round-info { font-size: 1.2em; color: #6b7280; margin-bottom: 10px; }
-    .shared-score {
-      font-size: 4em;
-      font-weight: bold;
-      color: #667eea;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-    }
-    .roll-count { color: #6b7280; margin-top: 5px; }
-    
-    .last-roll {
-      margin-top: 15px;
-      padding: 15px;
-      background: white;
-      border-radius: 10px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 15px;
-    }
-    .dice-display {
-      width: 60px;
-      height: 60px;
-      background: white;
-      border: 3px solid #667eea;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2em;
-      font-weight: bold;
-      color: #667eea;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    .dice-separator {
-      font-size: 2em;
-      color: #6b7280;
-    }
-    .dice-total {
-      padding: 10px 20px;
-      background: #667eea;
-      color: white;
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 1.2em;
-    }
-    
-    .sort-controls {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin-bottom: 15px;
-    }
-    .sort-btn {
-      padding: 8px 15px;
-      font-size: 0.9em;
-      background: #e5e7eb;
-      color: #374151;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    .sort-btn.active {
-      background: #667eea;
-      color: white;
-    }
-    .sort-btn:hover:not(.active) {
-      background: #d1d5db;
-    }
-    
-    .players-grid {
-      display: grid;
-      gap: 10px;
-      margin: 20px 0;
-    }
-    .player-card {
-      padding: 15px;
-      background: #f9fafb;
-      border-radius: 10px;
-      border-left: 4px solid #ddd;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-    }
-    .player-card.active { border-left-color: #667eea; background: #ede9fe; }
-    .player-card.banked { border-left-color: #10b981; background: #d1fae5; }
-    .player-name { font-weight: bold; font-size: 1.1em; }
-    .player-scores { font-size: 0.9em; color: #6b7280; }
-    .player-status {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .badge {
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-size: 0.8em;
-      font-weight: bold;
-    }
-    .badge-success { background: #10b981; color: white; }
-    .badge-info { background: #3b82f6; color: white; }
-    
-    .action-area {
-      margin: 20px 0;
-      padding: 20px;
-      background: #f3f4f6;
-      border-radius: 10px;
-      text-align: center;
-    }
-    
-    .dice-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      margin: 15px 0;
-    }
-    
-    .toggle-input-mode {
-      margin-bottom: 15px;
-    }
-    
-    .host-controls {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 20px;
-    }
-    
-    .error-message {
-      background: #fee2e2;
-      color: #dc2626;
-      padding: 10px;
-      border-radius: 5px;
-      margin: 10px 0;
-      text-align: center;
-    }
-    
-    /* End Screen */
-    .winner-announcement {
-      text-align: center;
-      padding: 30px;
-      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-      border-radius: 10px;
-      margin: 20px 0;
-      color: white;
-    }
-    .winner-announcement h2 { font-size: 2.5em; margin-bottom: 10px; }
-    .final-scores {
-      margin: 20px 0;
-    }
-    .score-item {
-      padding: 15px;
-      margin: 10px 0;
-      background: #f9fafb;
-      border-radius: 10px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 1.2em;
-    }
-    .score-item:first-child {
-      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-      color: white;
-      font-weight: bold;
-      font-size: 1.5em;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🎲 Bank</h1>
-    
-    <!-- Join/Create Screen -->
-    <div id="joinScreen" class="screen active">
-      <div class="join-controls">
-        <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
-        <button class="btn-primary" onclick="createRoom()">Create New Game</button>
-        <div style="text-align: center; margin: 10px 0;">— OR —</div>
-        <input type="text" id="roomCodeInput" placeholder="Enter room code" maxlength="4" style="text-transform: uppercase;">
-        <button class="btn-secondary" onclick="joinRoom()">Join Game</button>
-      </div>
-      <div id="errorMsg" class="error-message" style="display: none;"></div>
-    </div>
-    
-    <!-- Waiting Room -->
-    <div id="waitingScreen" class="screen">
-      <div class="room-code">
-        <p>Room Code</p>
-        <h2 id="displayRoomCode"></h2>
-        <p style="margin-top: 10px; color: #6b7280;">Share this code with friends!</p>
-      </div>
-      
-      <div class="rounds-config" id="roundsConfig" style="display: none;">
-        <label for="totalRoundsInput">Number of Rounds:</label>
-        <input type="number" id="totalRoundsInput" min="1" max="50" value="20" onchange="setRounds()">
-      </div>
-      
-      <div class="player-list">
-        <h3 style="margin-bottom: 15px;">Players</h3>
-        <div id="waitingPlayerList"></div>
-      </div>
-      <div style="text-align: center;">
-        <button id="startGameBtn" class="btn-success" onclick="startGame()" style="display: none;">Start Game</button>
-      </div>
-    </div>
-    
-    <!-- Game Screen -->
-    <div id="gameScreen" class="screen">
-      <div class="game-header">
-        <div class="round-info">Round <span id="currentRound">1</span> / <span id="totalRounds">20</span></div>
-        <div class="shared-score" id="sharedScore">0</div>
-        <div class="roll-count">Roll <span id="rollCount">0</span></div>
-        <div class="last-roll" id="lastRollDisplay" style="display: none;">
-          <div class="dice-display" id="die1Display">?</div>
-          <div class="dice-separator">+</div>
-          <div class="dice-display" id="die2Display">?</div>
-          <div class="dice-separator">=</div>
-          <div class="dice-total" id="diceTotal">?</div>
-        </div>
-      </div>
-      
-      <div class="sort-controls">
-        <button class="sort-btn active" onclick="setSortMode('turn')" id="sortTurnBtn">Turn Order</button>
-        <button class="sort-btn" onclick="setSortMode('locked')" id="sortLockedBtn">By Locked Score</button>
-        <button class="sort-btn" onclick="setSortMode('projected')" id="sortProjectedBtn">By Projected Score</button>
-      </div>
-      
-      <div class="players-grid" id="playerCards"></div>
-      
-      <div class="action-area">
-        <div id="yourTurnArea" style="display: none;">
-          <h3>Your Turn!</h3>
-          
-          <div class="toggle-input-mode">
-            <button class="btn-secondary" onclick="toggleInputMode()" id="toggleModeBtn">Use Physical Dice</button>
-          </div>
-          
-          <!-- Virtual dice roll -->
-          <div id="virtualDiceArea">
-            <button class="btn-primary" onclick="rollDice()" style="font-size: 1.5em; padding: 20px 40px;">🎲 Roll Dice</button>
-          </div>
-          
-          <!-- Physical dice input -->
-          <div id="physicalDiceArea" style="display: none;">
-            <p style="margin-bottom: 10px; color: #6b7280;">Enter your roll:</p>
-            <div class="dice-buttons" id="diceButtons"></div>
-          </div>
-        </div>
-        
-        <div id="bankArea" style="display: none;">
-          <button class="btn-success" onclick="bank()">🏦 Bank Now</button>
-        </div>
-        
-        <div id="waitingArea">
-          <p style="color: #6b7280;">Waiting for <span id="currentPlayerName"></span>...</p>
-        </div>
-      </div>
-      
-      <div class="host-controls" id="hostControls" style="display: none;">
-        <button class="btn-secondary" onclick="nextTurn()">Next Turn →</button>
-        <button class="btn-danger" onclick="undo()">↶ Undo</button>
-      </div>
-    </div>
-    
-    <!-- End Screen -->
-    <div id="endScreen" class="screen">
-      <div class="winner-announcement">
-        <h2>🏆</h2>
-        <h2 id="winnerName">Winner</h2>
-      </div>
-      <div class="final-scores" id="finalScores"></div>
-      <div style="text-align: center; margin-top: 20px;">
-        <button class="btn-primary" onclick="location.reload()">New Game</button>
-      </div>
-    </div>
-  </div>
+const express = require('express');
+const app = express();
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
+const path = require('path');
 
-  <script>
-    const socket = io();
-    let gameState = null;
-    let myId = null;
-    let isHost = false;
-    let usePhysicalDice = false;
-    let sortMode = 'turn'; // 'turn', 'locked', or 'projected'
+app.use(express.static('public'));
 
-    // Join/Create functions
-    function createRoom() {
-      const name = document.getElementById('playerName').value.trim();
-      if (!name) {
-        showError('Please enter your name');
-        return;
-      }
-      socket.emit('create_room', { playerName: name });
+// In-memory room storage
+const rooms = new Map();
+
+// Helper: Generate 4-letter room code
+function generateRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code;
+  do {
+    code = Array.from({ length: 4 }, () => 
+      chars[Math.floor(Math.random() * chars.length)]
+    ).join('');
+  } while (rooms.has(code));
+  return code;
+}
+
+// Helper: Create initial game state
+function createGameState(totalRounds = 20) {
+  return {
+    status: 'waiting',
+    currentRound: 0,
+    totalRounds,
+    roundActive: false,
+    sharedRoundScore: 0,
+    rollCount: 0,
+    currentTurnIndex: 0,
+    lastRoll: null
+  };
+}
+
+// Helper: Deep clone for undo
+function cloneState(room) {
+  return JSON.parse(JSON.stringify({
+    players: room.players,
+    gameState: room.gameState
+  }));
+}
+
+// Helper: Save state to history
+function saveHistory(room) {
+  room.history.push(cloneState(room));
+  // Keep last 10 states
+  if (room.history.length > 10) room.history.shift();
+}
+
+// Helper: Calculate dice result
+function processDiceRoll(room, die1, die2) {
+  const total = die1 + die2;
+  const isDoubles = die1 === die2;
+  const { rollCount, sharedRoundScore } = room.gameState;
+  
+  let newScore = sharedRoundScore;
+  let roundDead = false;
+  
+  if (rollCount < 3) {
+    // First 3 rolls
+    if (total === 7) {
+      newScore += 70;
+    } else {
+      newScore += total;
     }
-
-    function joinRoom() {
-      const name = document.getElementById('playerName').value.trim();
-      const code = document.getElementById('roomCodeInput').value.trim().toUpperCase();
-      if (!name || !code) {
-        showError('Please enter your name and room code');
-        return;
-      }
-      socket.emit('join_room', { roomCode: code, playerName: name });
+  } else {
+    // After 3 rolls
+    if (total === 7) {
+      roundDead = true;
+      newScore = 0;
+    } else if (isDoubles) {
+      newScore *= 2;
+    } else {
+      newScore += total;
     }
+  }
+  
+  return { newScore, roundDead, isDoubles };
+}
 
-    function setRounds() {
-      const rounds = parseInt(document.getElementById('totalRoundsInput').value);
-      socket.emit('set_rounds', { totalRounds: rounds });
+// Helper: Start new round
+function startNewRound(room) {
+  // Always unbank everyone at the start of a new round (safety check)
+  room.players.forEach(p => {
+    p.bankedThisRound = false;
+    p.usePhysicalDice = false;
+  });
+  
+  // Increment round
+  room.gameState.currentRound++;
+  room.gameState.roundActive = true;
+  room.gameState.sharedRoundScore = 0;
+  room.gameState.rollCount = 0;
+  room.gameState.lastRoll = null;
+  
+  // Advance to next player (don't reset to 0)
+  room.gameState.currentTurnIndex = 
+    (room.gameState.currentTurnIndex + 1) % room.players.length;
+}
+
+// Helper: Advance to next turn (skip banked players)
+function advanceTurn(room) {
+  const startIndex = room.gameState.currentTurnIndex;
+  let nextIndex = (startIndex + 1) % room.players.length;
+  
+  // Keep advancing until we find a player who hasn't banked
+  // or we've checked everyone
+  let attempts = 0;
+  while (room.players[nextIndex].bankedThisRound && attempts < room.players.length) {
+    nextIndex = (nextIndex + 1) % room.players.length;
+    attempts++;
+  }
+  
+  room.gameState.currentTurnIndex = nextIndex;
+  
+  // If everyone has banked, end the round
+  if (room.players.every(p => p.bankedThisRound)) {
+    room.gameState.roundActive = false;
+  }
+}
+
+// Socket.IO connection handler
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+  
+  // Create room
+  socket.on('create_room', ({ playerName }) => {
+    const roomCode = generateRoomCode();
+    const room = {
+      roomCode,
+      hostId: socket.id,
+      players: [{
+        id: socket.id,
+        name: playerName,
+        lockedScore: 0,
+        bankedThisRound: false,
+        eliminated: false,
+        turnOrder: 0,
+        usePhysicalDice: false
+      }],
+      gameState: createGameState(),
+      history: []
+    };
+    
+    rooms.set(roomCode, room);
+    socket.join(roomCode);
+    socket.roomCode = roomCode;
+    
+    socket.emit('room_created', { roomCode, playerId: socket.id });
+    io.to(roomCode).emit('game_state_update', room);
+  });
+  
+  // Join room
+  socket.on('join_room', ({ roomCode, playerName }) => {
+    const room = rooms.get(roomCode.toUpperCase());
+    
+    if (!room) {
+      socket.emit('error', { message: 'Room not found' });
+      return;
     }
-
-    function startGame() {
-      socket.emit('start_game');
+    
+    if (room.gameState.status !== 'waiting') {
+      socket.emit('error', { message: 'Game already started' });
+      return;
     }
-
-    function setSortMode(mode) {
-      sortMode = mode;
-      
-      // Update button states
-      document.getElementById('sortTurnBtn').classList.toggle('active', mode === 'turn');
-      document.getElementById('sortLockedBtn').classList.toggle('active', mode === 'locked');
-      document.getElementById('sortProjectedBtn').classList.toggle('active', mode === 'projected');
-      
-      // Re-render player list with new sort
-      if (gameState) {
-        updateGameScreen(gameState);
-      }
+    
+    const player = {
+      id: socket.id,
+      name: playerName,
+      lockedScore: 0,
+      bankedThisRound: false,
+      eliminated: false,
+      turnOrder: room.players.length,
+      usePhysicalDice: false
+    };
+    
+    room.players.push(player);
+    socket.join(roomCode);
+    socket.roomCode = roomCode;
+    
+    io.to(roomCode).emit('game_state_update', room);
+  });
+  
+  // Set total rounds
+  socket.on('set_rounds', ({ totalRounds }) => {
+    const room = rooms.get(socket.roomCode);
+    if (!room || room.hostId !== socket.id || room.gameState.status !== 'waiting') return;
+    
+    room.gameState.totalRounds = totalRounds;
+    io.to(socket.roomCode).emit('game_state_update', room);
+  });
+  
+  // Start game
+  socket.on('start_game', () => {
+    const room = rooms.get(socket.roomCode);
+    if (!room || room.hostId !== socket.id) return;
+    
+    saveHistory(room);
+    room.gameState.status = 'playing';
+    startNewRound(room);
+    
+    io.to(socket.roomCode).emit('game_state_update', room);
+  });
+  
+  // Roll dice (virtual)
+  socket.on('roll_dice', () => {
+    const room = rooms.get(socket.roomCode);
+    if (!room || room.gameState.status !== 'playing') return;
+    
+    const currentPlayer = room.players[room.gameState.currentTurnIndex];
+    if (currentPlayer.id !== socket.id) {
+      socket.emit('error', { message: 'Not your turn' });
+      return;
     }
-
-    function toggleInputMode() {
-      usePhysicalDice = !usePhysicalDice;
-      updateInputMode();
+    
+    if (!room.gameState.roundActive) {
+      socket.emit('error', { message: 'Round is over' });
+      return;
     }
-
-    function updateInputMode() {
-      const virtualArea = document.getElementById('virtualDiceArea');
-      const physicalArea = document.getElementById('physicalDiceArea');
-      const toggleBtn = document.getElementById('toggleModeBtn');
-      
-      if (usePhysicalDice) {
-        virtualArea.style.display = 'none';
-        physicalArea.style.display = 'block';
-        toggleBtn.textContent = 'Use Virtual Dice';
-        if (gameState) {
-          renderDiceButtons();
+    
+    saveHistory(room);
+    
+    // Roll two dice
+    const die1 = Math.floor(Math.random() * 6) + 1;
+    const die2 = Math.floor(Math.random() * 6) + 1;
+    const total = die1 + die2;
+    
+    // Store the roll
+    room.gameState.lastRoll = { die1, die2, total };
+    
+    const { newScore, roundDead } = processDiceRoll(room, die1, die2);
+    
+    room.gameState.sharedRoundScore = newScore;
+    room.gameState.rollCount++;
+    
+    if (roundDead) {
+      room.gameState.roundActive = false;
+      // Everyone who banked gets their score (will be 0 since round died)
+      room.players.forEach(p => {
+        if (p.bankedThisRound) {
+          p.lockedScore += newScore;
         }
+        // Immediately unbank everyone
+        p.bankedThisRound = false;
+        p.usePhysicalDice = false;
+      });
+      
+      // Send update immediately so everyone sees they're unbanked
+      io.to(socket.roomCode).emit('game_state_update', room);
+      return; // Don't send another update at the end
+    } else {
+      // Auto-advance to next turn
+      advanceTurn(room);
+    }
+    
+    io.to(socket.roomCode).emit('game_state_update', room);
+  });
+  
+  // Submit physical dice
+  socket.on('submit_physical_dice', ({ value, isDoubles }) => {
+    const room = rooms.get(socket.roomCode);
+    if (!room || room.gameState.status !== 'playing') return;
+    
+    const currentPlayer = room.players[room.gameState.currentTurnIndex];
+    if (currentPlayer.id !== socket.id) {
+      socket.emit('error', { message: 'Not your turn' });
+      return;
+    }
+    
+    if (!room.gameState.roundActive) {
+      socket.emit('error', { message: 'Round is over' });
+      return;
+    }
+    
+    saveHistory(room);
+    
+    // Mark player as using physical dice
+    currentPlayer.usePhysicalDice = true;
+    
+    // Store the roll (for physical dice, we don't know individual die values for non-doubles)
+    if (isDoubles) {
+      const dieValue = value / 2;
+      room.gameState.lastRoll = { die1: dieValue, die2: dieValue, total: value };
+    } else {
+      room.gameState.lastRoll = { die1: null, die2: null, total: value };
+    }
+    
+    const { rollCount, sharedRoundScore } = room.gameState;
+    let newScore = sharedRoundScore;
+    let roundDead = false;
+    
+    if (rollCount < 3) {
+      // First 3 rolls: value is 2-12
+      if (value === 7) {
+        newScore += 70;
       } else {
-        virtualArea.style.display = 'block';
-        physicalArea.style.display = 'none';
-        toggleBtn.textContent = 'Use Physical Dice';
+        newScore += value;
       }
-    }
-
-    function renderDiceButtons() {
-      const container = document.getElementById('diceButtons');
-      const rollCount = gameState.gameState.rollCount;
-      
-      if (rollCount < 3) {
-        // First 3 rolls: 2-12 with 7 special
-        const buttons = [];
-        for (let i = 2; i <= 12; i++) {
-          const label = i === 7 ? '7 (+70)' : i.toString();
-          buttons.push(`<button class="btn-dice" onclick="submitPhysicalDice(${i}, false)">${label}</button>`);
-        }
-        container.innerHTML = buttons.join('');
+    } else {
+      // After 3 rolls
+      if (value === 7) {
+        roundDead = true;
+        newScore = 0;
+      } else if (isDoubles) {
+        newScore *= 2;
       } else {
-        // After 3 rolls: 3-11, 7 kills, doubles
-        const buttons = [];
-        
-        // 2 and 12 disabled
-        buttons.push(`<button class="btn-dice" disabled style="opacity: 0.3;">2</button>`);
-        
-        for (let i = 3; i <= 11; i++) {
-          if (i === 7) {
-            buttons.push(`<button class="btn-dice btn-danger" onclick="submitPhysicalDice(${i}, false)">7 (💀)</button>`);
-          } else {
-            buttons.push(`<button class="btn-dice" onclick="submitPhysicalDice(${i}, false)">${i}</button>`);
-          }
+        newScore += value;
+      }
+    }
+    
+    room.gameState.sharedRoundScore = newScore;
+    room.gameState.rollCount++;
+    
+    if (roundDead) {
+      room.gameState.roundActive = false;
+      // Everyone who banked gets their score (will be 0)
+      room.players.forEach(p => {
+        if (p.bankedThisRound) {
+          p.lockedScore += newScore;
         }
-        
-        buttons.push(`<button class="btn-dice" disabled style="opacity: 0.3;">12</button>`);
-        buttons.push(`<button class="btn-dice btn-success" onclick="submitPhysicalDice(0, true)" style="grid-column: span 2;">Doubles (×2)</button>`);
-        
-        container.innerHTML = buttons.join('');
-      }
+        // Immediately unbank everyone
+        p.bankedThisRound = false;
+        p.usePhysicalDice = false;
+      });
+      
+      // Send update immediately so everyone sees they're unbanked
+      io.to(socket.roomCode).emit('game_state_update', room);
+      return; // Don't send another update at the end
+    } else {
+      // Auto-advance to next turn
+      advanceTurn(room);
     }
-
-    // Game actions
-    function rollDice() {
-      socket.emit('roll_dice');
+    
+    io.to(socket.roomCode).emit('game_state_update', room);
+  });
+  
+  // Bank
+  socket.on('bank', () => {
+    const room = rooms.get(socket.roomCode);
+    if (!room || room.gameState.status !== 'playing') return;
+    if (!room.gameState.roundActive) return;
+    if (room.gameState.rollCount < 3) {
+      socket.emit('error', { message: 'Cannot bank in first 3 rolls' });
+      return;
     }
-
-    function submitPhysicalDice(value, isDoubles) {
-      socket.emit('submit_physical_dice', { value, isDoubles });
-    }
-
-    function bank() {
-      socket.emit('bank');
-    }
-
-    function nextTurn() {
-      socket.emit('next_turn');
-    }
-
-    function undo() {
-      socket.emit('undo');
-    }
-
-    // Socket listeners
-    socket.on('room_created', ({ roomCode, playerId }) => {
-      myId = playerId;
-      isHost = true;
-      document.getElementById('displayRoomCode').textContent = roomCode;
-      showScreen('waitingScreen');
-    });
-
-    socket.on('game_state_update', (room) => {
-      gameState = room;
-      myId = myId || socket.id;
-      isHost = room.hostId === myId;
+    
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player || player.bankedThisRound) return;
+    
+    saveHistory(room);
+    
+    // Add current round score to locked score
+    player.lockedScore += room.gameState.sharedRoundScore;
+    player.bankedThisRound = true;
+    
+    // Check if all players have banked
+    if (room.players.every(p => p.bankedThisRound)) {
+      room.gameState.roundActive = false;
       
-      if (room.gameState.status === 'waiting') {
-        updateWaitingRoom(room);
-      } else if (room.gameState.status === 'playing') {
-        updateGameScreen(room);
-      } else if (room.gameState.status === 'finished') {
-        updateEndScreen(room);
-      }
-    });
-
-    socket.on('error', ({ message }) => {
-      showError(message);
-    });
-
-    // UI update functions
-    function updateWaitingRoom(room) {
-      showScreen('waitingScreen');
-      document.getElementById('displayRoomCode').textContent = room.roomCode;
-      document.getElementById('totalRoundsInput').value = room.gameState.totalRounds;
+      // Immediately unbank everyone
+      room.players.forEach(p => {
+        p.bankedThisRound = false;
+        p.usePhysicalDice = false;
+      });
       
-      const list = document.getElementById('waitingPlayerList');
-      list.innerHTML = room.players.map((p, i) => `
-        <div class="player-item">
-          <span>${p.name} ${p.id === room.hostId ? '(Host)' : ''}</span>
-        </div>
-      `).join('');
+      // Send update immediately so everyone sees they're unbanked
+      io.to(socket.roomCode).emit('game_state_update', room);
       
-      document.getElementById('startGameBtn').style.display = isHost ? 'block' : 'none';
-      document.getElementById('roundsConfig').style.display = isHost ? 'block' : 'none';
-    }
-
-    function updateGameScreen(room) {
-      showScreen('gameScreen');
-      
-      document.getElementById('currentRound').textContent = room.gameState.currentRound;
-      document.getElementById('totalRounds').textContent = room.gameState.totalRounds;
-      document.getElementById('sharedScore').textContent = room.gameState.sharedRoundScore;
-      document.getElementById('rollCount').textContent = room.gameState.rollCount;
-      
-      const currentPlayer = room.players[room.gameState.currentTurnIndex];
-      document.getElementById('currentPlayerName').textContent = currentPlayer.name;
-      
-      // Player cards
-      const cardsHtml = room.players.map(p => {
-        const isCurrent = p.id === currentPlayer.id;
-        const projectedScore = p.bankedThisRound ? p.lockedScore : p.lockedScore + room.gameState.sharedRoundScore;
-        
-        return `
-          <div class="player-card ${isCurrent ? 'active' : ''} ${p.bankedThisRound ? 'banked' : ''}">
-            <div>
-              <div class="player-name">${p.name}</div>
-              <div class="player-scores">
-                Locked: ${p.lockedScore} | Projected: ${projectedScore}
-              </div>
-            </div>
-            <div class="player-status">
-              ${p.bankedThisRound ? '<span class="badge badge-success">BANKED</span>' : ''}
-              ${isCurrent ? '<span class="badge badge-info">TURN</span>' : ''}
-            </div>
-          </div>
-        `;
-      }).join('');
-      document.getElementById('playerCards').innerHTML = cardsHtml;
-      
-      // Action area
-      const isMyTurn = currentPlayer.id === myId;
-      const myPlayer = room.players.find(p => p.id === myId);
-      
-      // Can't roll if you've already banked OR if round is not active
-      const canRoll = isMyTurn && room.gameState.roundActive && !myPlayer.bankedThisRound;
-      
-      // Can bank if: not banked yet, at least 3 rolls done, round is still active
-      const canBank = myPlayer && !myPlayer.bankedThisRound && 
-                      room.gameState.rollCount >= 3 && 
-                      room.gameState.roundActive;
-      
-      // Show/hide main action areas
-      document.getElementById('yourTurnArea').style.display = canRoll ? 'block' : 'none';
-      document.getElementById('bankArea').style.display = canBank ? 'block' : 'none';
-      
-      // Determine what waiting message to show
-      const shouldWait = !canRoll;
-      document.getElementById('waitingArea').style.display = shouldWait ? 'block' : 'none';
-      
-      // Update waiting message based on state
-      if (myPlayer.bankedThisRound) {
-        // Player has banked - waiting for others
-        document.getElementById('waitingArea').innerHTML = '<p style="color: #10b981; font-weight: bold;">You\'ve banked! Waiting for others...</p>';
-      } else if (!room.gameState.roundActive) {
-        // Round is over - waiting for next round
-        document.getElementById('waitingArea').innerHTML = '<p style="color: #f59e0b; font-weight: bold;">Round Over - Waiting for next round...</p>';
-      } else if (!isMyTurn) {
-        // Not your turn - waiting for current player
-        document.getElementById('waitingArea').innerHTML = `<p style="color: #6b7280;">Waiting for ${currentPlayer.name}...</p>`;
-      }
-      
-      // Reset to virtual dice for new turn unless player explicitly used physical dice
-      if (canRoll) {
-        if (!myPlayer.usePhysicalDice) {
-          usePhysicalDice = false;
+      // Auto-advance to next round after brief delay
+      setTimeout(() => {
+        if (room.gameState.currentRound < room.gameState.totalRounds) {
+          startNewRound(room);
+          io.to(socket.roomCode).emit('game_state_update', room);
         } else {
-          usePhysicalDice = true;
+          room.gameState.status = 'finished';
+          io.to(socket.roomCode).emit('game_state_update', room);
         }
-        updateInputMode();
+      }, 2000);
+      
+      return; // Don't send another update at the end
+    } else {
+      // If the current turn player just banked, advance to next non-banked player
+      const currentPlayer = room.players[room.gameState.currentTurnIndex];
+      if (currentPlayer.id === socket.id) {
+        advanceTurn(room);
       }
+    }
+    
+    io.to(socket.roomCode).emit('game_state_update', room);
+  });
+  
+  // Next turn (host only)
+  socket.on('next_turn', () => {
+    const room = rooms.get(socket.roomCode);
+    if (!room || room.hostId !== socket.id) return;
+    
+    saveHistory(room);
+    
+    // If round is dead or all players banked, end round and start new one
+    const allBanked = room.players.every(p => p.bankedThisRound);
+    
+    if (!room.gameState.roundActive || allBanked) {
+      // End round, lock scores for those who haven't banked yet
+      room.players.forEach(p => {
+        if (!p.bankedThisRound && room.gameState.roundActive) {
+          // They didn't bank, so they get the current score
+          p.lockedScore += room.gameState.sharedRoundScore;
+        }
+        // Unbank everyone
+        p.bankedThisRound = false;
+        p.usePhysicalDice = false;
+      });
       
-      // Host controls
-      document.getElementById('hostControls').style.display = isHost ? 'flex' : 'none';
-    }
-
-    function updateEndScreen(room) {
-      showScreen('endScreen');
+      // Send update to show everyone is unbanked
+      io.to(socket.roomCode).emit('game_state_update', room);
       
-      const sorted = [...room.players].sort((a, b) => b.lockedScore - a.lockedScore);
-      document.getElementById('winnerName').textContent = sorted[0].name + ' Wins!';
-      
-      const scoresHtml = sorted.map((p, i) => `
-        <div class="score-item">
-          <span>${i + 1}. ${p.name}</span>
-          <span>${p.lockedScore} points</span>
-        </div>
-      `).join('');
-      document.getElementById('finalScores').innerHTML = scoresHtml;
+      // Start next round or end game
+      if (room.gameState.currentRound < room.gameState.totalRounds) {
+        startNewRound(room);
+        io.to(socket.roomCode).emit('game_state_update', room);
+      } else {
+        room.gameState.status = 'finished';
+        io.to(socket.roomCode).emit('game_state_update', room);
+      }
+    } else {
+      // Just move to next player
+      advanceTurn(room);
+      io.to(socket.roomCode).emit('game_state_update', room);
     }
+  });
+  
+  // Undo (host only)
+  socket.on('undo', () => {
+    const room = rooms.get(socket.roomCode);
+    if (!room || room.hostId !== socket.id) return;
+    if (room.history.length === 0) return;
+    
+    const previousState = room.history.pop();
+    room.players = previousState.players;
+    room.gameState = previousState.gameState;
+    
+    io.to(socket.roomCode).emit('game_state_update', room);
+  });
+  
+  // Disconnect
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+    
+    if (!socket.roomCode) return;
+    const room = rooms.get(socket.roomCode);
+    if (!room) return;
+    
+    // Remove player
+    room.players = room.players.filter(p => p.id !== socket.id);
+    
+    // If host left and players remain, assign new host
+    if (room.hostId === socket.id && room.players.length > 0) {
+      room.hostId = room.players[0].id;
+    }
+    
+    // If no players, delete room
+    if (room.players.length === 0) {
+      rooms.delete(socket.roomCode);
+    } else {
+      io.to(socket.roomCode).emit('game_state_update', room);
+    }
+  });
+});
 
-    function showScreen(screenId) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById(screenId).classList.add('active');
-    }
-
-    function showError(msg) {
-      const errorEl = document.getElementById('errorMsg');
-      errorEl.textContent = msg;
-      errorEl.style.display = 'block';
-      setTimeout(() => errorEl.style.display = 'none', 3000);
-    }
-  </script>
-</body>
-</html>
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
