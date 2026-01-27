@@ -83,11 +83,8 @@ function processDiceRoll(room, die1, die2) {
 
 // Helper: Start new round
 function startNewRound(room) {
-  // Reset all players
-  room.players.forEach(p => {
-    p.bankedThisRound = false;
-    p.usePhysicalDice = false;
-  });
+  // Note: Players are already unbanked when round ended
+  // This just increments the round and resets scores
   
   // Increment round
   room.gameState.currentRound++;
@@ -243,10 +240,10 @@ io.on('connection', (socket) => {
         if (p.bankedThisRound) {
           p.lockedScore += newScore;
         }
+        // Immediately unbank everyone
+        p.bankedThisRound = false;
+        p.usePhysicalDice = false;
       });
-      
-      // Don't auto-advance turn when round dies
-      // The next round will start from player 1
     } else {
       // Auto-advance to next turn
       advanceTurn(room);
@@ -317,10 +314,10 @@ io.on('connection', (socket) => {
         if (p.bankedThisRound) {
           p.lockedScore += newScore;
         }
+        // Immediately unbank everyone
+        p.bankedThisRound = false;
+        p.usePhysicalDice = false;
       });
-      
-      // Don't auto-advance turn when round dies
-      // The next round will start from player 1
     } else {
       // Auto-advance to next turn
       advanceTurn(room);
@@ -351,6 +348,12 @@ io.on('connection', (socket) => {
     // Check if all players have banked
     if (room.players.every(p => p.bankedThisRound)) {
       room.gameState.roundActive = false;
+      
+      // Immediately unbank everyone
+      room.players.forEach(p => {
+        p.bankedThisRound = false;
+        p.usePhysicalDice = false;
+      });
       
       // Auto-advance to next round after brief delay
       setTimeout(() => {
@@ -390,6 +393,9 @@ io.on('connection', (socket) => {
           // They didn't bank, so they get the current score
           p.lockedScore += room.gameState.sharedRoundScore;
         }
+        // Unbank everyone
+        p.bankedThisRound = false;
+        p.usePhysicalDice = false;
       });
       
       // Start next round or end game
