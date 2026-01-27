@@ -447,20 +447,75 @@ io.on('connection', (socket) => {
     const room = rooms.get(socket.roomCode);
     if (!room) return;
     
-    // Remove player
-    room.players = room.players.filter(p => p.id !== socket.id);
-    
-    // If host left and players remain, assign new host
-    if (room.hostId === socket.id && room.players.length > 0) {
-      room.hostId = room.players[0].id;
+    // Mark player as disconnected but don't remove them immediately
+    const player = room.players.find(p => p.id === socket.id);
+    if (player) {
+      player.disconnected = true;
+      player.disconnectTime = Date.now();
     }
     
-    // If no players, delete room
-    if (room.players.length === 0) {
-      rooms.delete(socket.roomCode);
-    } else {
-      io.to(socket.roomCode).emit('game_state_update', room);
+    // Give them 60 seconds to reconnect before removing
+    setTimeout(() => {
+      const room = rooms.get(socket.roomCode);
+      if (!room) return;
+      
+      const player = room.players.find(p => p.id === socket.id);
+      if (player && player.disconnected) {
+        // Still disconnected after 60s, remove them
+        room.players = room.players.filter(p => p.id !== socket.id);
+        
+        // If host left and players remain, assign new host
+        if (room.hostId === socket.id && room.players.length > 0) {
+          room.hostId = room.players[0].id;
+        }
+        
+        // If no players, delete room
+        if (room.players.length === 0) {
+          rooms.delete(socket.roomCode);
+        } else {
+          io.to(socket.roomCode).emit('game_state_update', room);
+        }
+      }
+    }, 60000); // 60 second grace period
+    
+    io.to(socket.roomCode).emit('game_state_update', room);
+  });
+  
+  // Reconnect
+  socket.on('reconnect_player', ({ roomCode, playerId }) => {
+    const room = rooms.get(roomCode.toUpperCase());
+    
+    if (!room) {
+      socket.emit('error', { message: 'Room not found' });
+      return;
     }
+    
+    const player = room.players.find(p => p.id === playerId);
+    
+    if (!player) {
+      socket.emit('error', { message: 'Player not found in room' });
+      return;
+    }
+    
+    // Reconnect the player
+    const oldId = player.id;
+    player.id = socket.id;
+    player.disconnected = false;
+    delete player.disconnectTime;
+    
+    // Update host if this was the host
+    if (room.hostId === oldId) {
+      room.hostId = socket.id;
+    }
+    
+    // Join the room again
+    socket.join(roomCode);
+    socket.roomCode = roomCode;
+    
+    console.log('Player reconnected:', socket.id, 'was:', oldId);
+    
+    socket.emit('reconnected', { playerId: socket.id });
+    io.to(roomCode).emit('game_state_update', room);
   });
 });
 
