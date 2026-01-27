@@ -83,8 +83,11 @@ function processDiceRoll(room, die1, die2) {
 
 // Helper: Start new round
 function startNewRound(room) {
-  // Note: Players are already unbanked when round ended
-  // This just increments the round and resets scores
+  // Always unbank everyone at the start of a new round (safety check)
+  room.players.forEach(p => {
+    p.bankedThisRound = false;
+    p.usePhysicalDice = false;
+  });
   
   // Increment round
   room.gameState.currentRound++;
