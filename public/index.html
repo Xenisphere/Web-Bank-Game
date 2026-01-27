@@ -391,7 +391,8 @@
       </div>
       
       <div class="host-controls" id="hostControls" style="display: none;">
-        <button class="btn-secondary" onclick="nextTurn()">Next Turn →</button>
+        <button class="btn-secondary" onclick="nextTurn()" id="nextTurnBtn">Next Turn →</button>
+        <button class="btn-success" onclick="nextTurn()" id="nextRoundBtn" style="display: none;">Start Next Round →</button>
         <button class="btn-danger" onclick="undo()">↶ Undo</button>
       </div>
     </div>
@@ -696,7 +697,22 @@
       }
       
       // Host controls
-      document.getElementById('hostControls').style.display = isHost ? 'flex' : 'none';
+      if (isHost) {
+        document.getElementById('hostControls').style.display = 'flex';
+        
+        // Show appropriate button based on round state
+        if (!room.gameState.roundActive) {
+          // Round is over - show "Start Next Round" button
+          document.getElementById('nextTurnBtn').style.display = 'none';
+          document.getElementById('nextRoundBtn').style.display = 'block';
+        } else {
+          // Round is active - show "Next Turn" button
+          document.getElementById('nextTurnBtn').style.display = 'block';
+          document.getElementById('nextRoundBtn').style.display = 'none';
+        }
+      } else {
+        document.getElementById('hostControls').style.display = 'none';
+      }
     }
 
     function updateEndScreen(room) {
