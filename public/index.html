@@ -541,6 +541,7 @@
 
     // Socket listeners
     socket.on('room_created', ({ roomCode, playerId }) => {
+      console.log('Room created, my ID:', playerId);
       myId = playerId;
       isHost = true;
       document.getElementById('displayRoomCode').textContent = roomCode;
@@ -548,8 +549,16 @@
     });
 
     socket.on('game_state_update', (room) => {
+      console.log('Game state update received:', room);
+      console.log('My ID:', myId, 'Socket ID:', socket.id);
+      
       gameState = room;
-      myId = myId || socket.id;
+      
+      // Set myId if not already set
+      if (!myId) {
+        myId = socket.id;
+      }
+      
       isHost = room.hostId === myId;
       
       if (room.gameState.status === 'waiting') {
@@ -590,18 +599,47 @@
       document.getElementById('sharedScore').textContent = room.gameState.sharedRoundScore;
       document.getElementById('rollCount').textContent = room.gameState.rollCount;
       
+      // Display last roll
+      if (room.gameState.lastRoll) {
+        const lastRollEl = document.getElementById('lastRollDisplay');
+        lastRollEl.style.display = 'flex';
+        
+        if (room.gameState.lastRoll.die1 !== null) {
+          document.getElementById('die1Display').textContent = room.gameState.lastRoll.die1;
+          document.getElementById('die2Display').textContent = room.gameState.lastRoll.die2;
+        } else {
+          document.getElementById('die1Display').textContent = '?';
+          document.getElementById('die2Display').textContent = '?';
+        }
+        document.getElementById('diceTotal').textContent = room.gameState.lastRoll.total;
+      } else {
+        document.getElementById('lastRollDisplay').style.display = 'none';
+      }
+      
       const currentPlayer = room.players[room.gameState.currentTurnIndex];
-      document.getElementById('currentPlayerName').textContent = currentPlayer.name;
+      
+      // Sort players based on current sort mode
+      let sortedPlayers = [...room.players];
+      if (sortMode === 'locked') {
+        sortedPlayers.sort((a, b) => b.lockedScore - a.lockedScore);
+      } else if (sortMode === 'projected') {
+        sortedPlayers.sort((a, b) => {
+          const aProj = a.bankedThisRound ? a.lockedScore : a.lockedScore + room.gameState.sharedRoundScore;
+          const bProj = b.bankedThisRound ? b.lockedScore : b.lockedScore + room.gameState.sharedRoundScore;
+          return bProj - aProj;
+        });
+      }
+      // else sortMode === 'turn', keep original order
       
       // Player cards
-      const cardsHtml = room.players.map(p => {
+      const cardsHtml = sortedPlayers.map((p, index) => {
         const isCurrent = p.id === currentPlayer.id;
         const projectedScore = p.bankedThisRound ? p.lockedScore : p.lockedScore + room.gameState.sharedRoundScore;
         
         return `
           <div class="player-card ${isCurrent ? 'active' : ''} ${p.bankedThisRound ? 'banked' : ''}">
             <div>
-              <div class="player-name">${p.name}</div>
+              <div class="player-name">${sortMode === 'turn' ? '' : (index + 1) + '. '}${p.name}</div>
               <div class="player-scores">
                 Locked: ${p.lockedScore} | Projected: ${projectedScore}
               </div>
@@ -619,7 +657,7 @@
       const isMyTurn = currentPlayer.id === myId;
       const myPlayer = room.players.find(p => p.id === myId);
       
-      // Can't roll if you've already banked
+      // Can't roll if you've already banked OR if round is not active
       const canRoll = isMyTurn && room.gameState.roundActive && !myPlayer.bankedThisRound;
       
       // Can bank if: not banked yet, at least 3 rolls done, round is still active
@@ -631,15 +669,20 @@
       document.getElementById('yourTurnArea').style.display = canRoll ? 'block' : 'none';
       document.getElementById('bankArea').style.display = canBank ? 'block' : 'none';
       
-      // Show waiting message if it's not your turn OR you've already banked
-      const shouldWait = !isMyTurn || myPlayer.bankedThisRound;
+      // Determine what waiting message to show
+      const shouldWait = !canRoll;
       document.getElementById('waitingArea').style.display = shouldWait ? 'block' : 'none';
       
-      // Update waiting message
+      // Update waiting message based on state
       if (myPlayer.bankedThisRound) {
+        // Player has banked - waiting for others
         document.getElementById('waitingArea').innerHTML = '<p style="color: #10b981; font-weight: bold;">You\'ve banked! Waiting for others...</p>';
-      } else {
-        document.getElementById('waitingArea').innerHTML = `<p style="color: #6b7280;">Waiting for <span id="currentPlayerName">${currentPlayer.name}</span>...</p>`;
+      } else if (!room.gameState.roundActive) {
+        // Round is over - waiting for next round
+        document.getElementById('waitingArea').innerHTML = '<p style="color: #f59e0b; font-weight: bold;">Round Over - Waiting for next round...</p>';
+      } else if (!isMyTurn) {
+        // Not your turn - waiting for current player
+        document.getElementById('waitingArea').innerHTML = `<p style="color: #6b7280;">Waiting for ${currentPlayer.name}...</p>`;
       }
       
       // Reset to virtual dice for new turn unless player explicitly used physical dice
