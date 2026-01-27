@@ -414,22 +414,18 @@ io.on('connection', (socket) => {
         p.usePhysicalDice = false;
       });
       
-      // Send update to show everyone is unbanked
-      io.to(socket.roomCode).emit('game_state_update', room);
-      
       // Start next round or end game
       if (room.gameState.currentRound < room.gameState.totalRounds) {
         startNewRound(room);
-        io.to(socket.roomCode).emit('game_state_update', room);
       } else {
         room.gameState.status = 'finished';
-        io.to(socket.roomCode).emit('game_state_update', room);
       }
     } else {
       // Just move to next player
       advanceTurn(room);
-      io.to(socket.roomCode).emit('game_state_update', room);
     }
+    
+    io.to(socket.roomCode).emit('game_state_update', room);
   });
   
   // Undo (host only)
