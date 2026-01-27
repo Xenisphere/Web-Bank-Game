@@ -619,7 +619,7 @@
       const isMyTurn = currentPlayer.id === myId;
       const myPlayer = room.players.find(p => p.id === myId);
       
-      // Can't roll if you've already banked
+      // Can't roll if you've already banked OR if round is not active
       const canRoll = isMyTurn && room.gameState.roundActive && !myPlayer.bankedThisRound;
       
       // Can bank if: not banked yet, at least 3 rolls done, round is still active
@@ -631,15 +631,20 @@
       document.getElementById('yourTurnArea').style.display = canRoll ? 'block' : 'none';
       document.getElementById('bankArea').style.display = canBank ? 'block' : 'none';
       
-      // Show waiting message if it's not your turn OR you've already banked
-      const shouldWait = !isMyTurn || myPlayer.bankedThisRound;
+      // Determine what waiting message to show
+      const shouldWait = !canRoll;
       document.getElementById('waitingArea').style.display = shouldWait ? 'block' : 'none';
       
-      // Update waiting message
+      // Update waiting message based on state
       if (myPlayer.bankedThisRound) {
+        // Player has banked - waiting for others
         document.getElementById('waitingArea').innerHTML = '<p style="color: #10b981; font-weight: bold;">You\'ve banked! Waiting for others...</p>';
-      } else {
-        document.getElementById('waitingArea').innerHTML = `<p style="color: #6b7280;">Waiting for <span id="currentPlayerName">${currentPlayer.name}</span>...</p>`;
+      } else if (!room.gameState.roundActive) {
+        // Round is over - waiting for next round
+        document.getElementById('waitingArea').innerHTML = '<p style="color: #f59e0b; font-weight: bold;">Round Over - Waiting for next round...</p>';
+      } else if (!isMyTurn) {
+        // Not your turn - waiting for current player
+        document.getElementById('waitingArea').innerHTML = `<p style="color: #6b7280;">Waiting for ${currentPlayer.name}...</p>`;
       }
       
       // Reset to virtual dice for new turn unless player explicitly used physical dice
