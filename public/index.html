@@ -808,7 +808,7 @@
       // Host physical dice input area (when it's NOT their turn but physical mode is on)
       const hostPhysicalInputArea = document.getElementById('hostPhysicalInputArea');
       if (hostPhysicalInputArea) {
-        const showHostInput = isHost && !isMyTurn && usePhysicalDice && room.gameState.roundActive && !myPlayer.bankedThisRound;
+        const showHostInput = isHost && !isMyTurn && usePhysicalDice && room.gameState.roundActive;
         hostPhysicalInputArea.style.display = showHostInput ? 'block' : 'none';
         
         if (showHostInput) {
@@ -818,7 +818,7 @@
       }
       
       // Determine what waiting message to show
-      const shouldWait = !canRoll && !(isHost && usePhysicalDice && room.gameState.roundActive && !myPlayer.bankedThisRound);
+      const shouldWait = !canRoll && !(isHost && usePhysicalDice && room.gameState.roundActive);
       document.getElementById('waitingArea').style.display = shouldWait ? 'block' : 'none';
       
       // Update waiting message based on state
