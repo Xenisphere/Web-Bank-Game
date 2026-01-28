@@ -370,10 +370,6 @@
         <div id="yourTurnArea" style="display: none;">
           <h3>Your Turn!</h3>
           
-          <div class="toggle-input-mode">
-            <button class="btn-secondary" onclick="toggleInputMode()" id="toggleModeBtn">Use Physical Dice</button>
-          </div>
-          
           <!-- Virtual dice roll -->
           <div id="virtualDiceArea">
             <button class="btn-primary" onclick="rollDice()" style="font-size: 1.5em; padding: 20px 40px;">🎲 Roll Dice</button>
@@ -764,6 +760,9 @@
       }).join('');
       document.getElementById('playerCards').innerHTML = cardsHtml;
       
+      // Update host toggle button visibility and state
+      updateInputMode();
+      
       // Action area
       const isMyTurn = currentPlayer.id === myId;
       const myPlayer = room.players.find(p => p.id === myId);
@@ -781,10 +780,35 @@
       document.getElementById('yourTurnArea').style.display = canRoll ? 'block' : 'none';
       document.getElementById('bankArea').style.display = canBank ? 'block' : 'none';
       
+      // Update input mode for player's turn
+      if (canRoll) {
+        const virtualArea = document.getElementById('virtualDiceArea');
+        const physicalArea = document.getElementById('physicalDiceArea');
+        const physicalHost = document.getElementById('physicalDiceHost');
+        const physicalPlayer = document.getElementById('physicalDicePlayer');
+        
+        if (usePhysicalDice) {
+          virtualArea.style.display = 'none';
+          physicalArea.style.display = 'block';
+          
+          if (isHost) {
+            physicalHost.style.display = 'block';
+            physicalPlayer.style.display = 'none';
+            renderDiceButtons();
+          } else {
+            physicalHost.style.display = 'none';
+            physicalPlayer.style.display = 'block';
+          }
+        } else {
+          virtualArea.style.display = 'block';
+          physicalArea.style.display = 'none';
+        }
+      }
+      
       // Host physical dice input area (when it's NOT their turn but physical mode is on)
       const hostPhysicalInputArea = document.getElementById('hostPhysicalInputArea');
       if (hostPhysicalInputArea) {
-        const showHostInput = isHost && !isMyTurn && usePhysicalDice && room.gameState.roundActive;
+        const showHostInput = isHost && !isMyTurn && usePhysicalDice && room.gameState.roundActive && !myPlayer.bankedThisRound;
         hostPhysicalInputArea.style.display = showHostInput ? 'block' : 'none';
         
         if (showHostInput) {
@@ -794,7 +818,7 @@
       }
       
       // Determine what waiting message to show
-      const shouldWait = !canRoll && !(isHost && usePhysicalDice && room.gameState.roundActive);
+      const shouldWait = !canRoll && !(isHost && usePhysicalDice && room.gameState.roundActive && !myPlayer.bankedThisRound);
       document.getElementById('waitingArea').style.display = shouldWait ? 'block' : 'none';
       
       // Update waiting message based on state
@@ -807,11 +831,6 @@
       } else if (!isMyTurn && !(isHost && usePhysicalDice)) {
         // Not your turn - waiting for current player (unless host in physical mode)
         document.getElementById('waitingArea').innerHTML = `<p style="color: #6b7280;">Waiting for ${currentPlayer.name}...</p>`;
-      }
-      
-      // Update input mode based on game state
-      if (canRoll) {
-        updateInputMode();
       }
       
       // Host controls
