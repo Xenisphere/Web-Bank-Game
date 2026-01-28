@@ -284,7 +284,9 @@ io.on('connection', (socket) => {
     if (!room || room.gameState.status !== 'playing') return;
     
     const currentPlayer = room.players[room.gameState.currentTurnIndex];
-    if (currentPlayer.id !== socket.id) {
+    
+    // Allow either the current player OR the host to submit
+    if (currentPlayer.id !== socket.id && room.hostId !== socket.id) {
       socket.emit('error', { message: 'Not your turn' });
       return;
     }
