@@ -361,49 +361,23 @@
       
       <div class="players-grid" id="playerCards"></div>
       
-      <!-- Host dice mode toggle (always visible to host during game) -->
-      <div id="hostDiceToggle" style="display: none; text-align: center; margin: 20px 0; padding: 15px; background: #f3f4f6; border-radius: 10px;">
-        <button class="btn-secondary" onclick="toggleInputMode()" id="toggleModeBtn">Use Physical Dice</button>
-      </div>
-      
       <div class="action-area">
         <div id="yourTurnArea" style="display: none;">
           <h3>Your Turn!</h3>
+          
+          <div class="toggle-input-mode">
+            <button class="btn-secondary" onclick="toggleInputMode()" id="toggleModeBtn">Use Physical Dice</button>
+          </div>
           
           <!-- Virtual dice roll -->
           <div id="virtualDiceArea">
             <button class="btn-primary" onclick="rollDice()" style="font-size: 1.5em; padding: 20px 40px;">🎲 Roll Dice</button>
           </div>
           
-          <!-- Physical dice prompt -->
+          <!-- Physical dice input -->
           <div id="physicalDiceArea" style="display: none;">
-            <!-- For host: show input buttons -->
-            <div id="physicalDiceHost" style="display: none;">
-              <div style="padding: 20px; background: white; border-radius: 10px; border: 2px dashed #667eea;">
-                <p style="font-size: 1.3em; color: #667eea; margin-bottom: 15px; font-weight: bold;">Enter the dice roll:</p>
-                <div class="dice-buttons" id="diceButtons"></div>
-              </div>
-            </div>
-            
-            <!-- For regular players: simple message -->
-            <div id="physicalDicePlayer" style="display: none;">
-              <div style="padding: 40px; background: white; border-radius: 10px; border: 3px solid #667eea; text-align: center;">
-                <p style="font-size: 2em; color: #667eea; margin-bottom: 10px;">🎲</p>
-                <p style="font-size: 1.5em; color: #667eea; font-weight: bold; margin-bottom: 10px;">Roll the Dice!</p>
-                <p style="color: #6b7280; font-size: 1.1em;">Wait for the host to enter your result</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Host physical dice input area (shown when it's NOT host's turn but physical dice enabled) -->
-        <div id="hostPhysicalInputArea" style="display: none;">
-          <div style="padding: 20px; background: white; border-radius: 10px; border: 2px solid #667eea; margin-bottom: 15px;">
-            <p style="font-size: 1.2em; color: #667eea; margin-bottom: 10px; font-weight: bold;">
-              <span id="currentPlayerForHost"></span>'s Turn
-            </p>
-            <p style="color: #6b7280; margin-bottom: 15px;">Enter their dice roll:</p>
-            <div class="dice-buttons" id="diceButtonsForOthers"></div>
+            <p style="margin-bottom: 10px; color: #6b7280;">Enter your roll:</p>
+            <div class="dice-buttons" id="diceButtons"></div>
           </div>
         </div>
         
@@ -441,6 +415,7 @@
     let gameState = null;
     let myId = null;
     let isHost = false;
+    let usePhysicalDice = false;
     let sortMode = 'turn'; // 'turn', 'locked', or 'projected'
     let currentRoomCode = null;
 
@@ -529,72 +504,61 @@
     }
 
     function toggleInputMode() {
-      socket.emit('toggle_dice_mode');
+      usePhysicalDice = !usePhysicalDice;
+      updateInputMode();
     }
 
     function updateInputMode() {
-      if (!gameState) return;
-      
-      const usePhysicalDice = gameState.gameState.usePhysicalDice;
+      const virtualArea = document.getElementById('virtualDiceArea');
+      const physicalArea = document.getElementById('physicalDiceArea');
       const toggleBtn = document.getElementById('toggleModeBtn');
-      const hostToggleArea = document.getElementById('hostDiceToggle');
       
-      if (!toggleBtn) return;
-      
-      // Update toggle button text
       if (usePhysicalDice) {
+        virtualArea.style.display = 'none';
+        physicalArea.style.display = 'block';
         toggleBtn.textContent = 'Use Virtual Dice';
+        if (gameState) {
+          renderDiceButtons();
+        }
       } else {
+        virtualArea.style.display = 'block';
+        physicalArea.style.display = 'none';
         toggleBtn.textContent = 'Use Physical Dice';
-      }
-      
-      // Show toggle for host only during active game
-      if (hostToggleArea) {
-        hostToggleArea.style.display = (isHost && gameState.gameState.status === 'playing') ? 'block' : 'none';
       }
     }
 
     function renderDiceButtons() {
+      const container = document.getElementById('diceButtons');
       const rollCount = gameState.gameState.rollCount;
       
-      // Determine which container to use
-      const containers = [
-        document.getElementById('diceButtons'),
-        document.getElementById('diceButtonsForOthers')
-      ];
-      
-      containers.forEach(container => {
-        if (!container) return;
-        
-        if (rollCount < 3) {
-          // First 3 rolls: 2-12 with 7 special
-          const buttons = [];
-          for (let i = 2; i <= 12; i++) {
-            const label = i === 7 ? '7 (+70)' : i.toString();
-            buttons.push(`<button class="btn-dice" onclick="submitPhysicalDice(${i}, false)">${label}</button>`);
-          }
-          container.innerHTML = buttons.join('');
-        } else {
-          // After 3 rolls: 3-11, 7 kills, doubles
-          const buttons = [];
-          
-          // 2 and 12 disabled
-          buttons.push(`<button class="btn-dice" disabled style="opacity: 0.3;">2</button>`);
-          
-          for (let i = 3; i <= 11; i++) {
-            if (i === 7) {
-              buttons.push(`<button class="btn-dice btn-danger" onclick="submitPhysicalDice(${i}, false)">7 (💀)</button>`);
-            } else {
-              buttons.push(`<button class="btn-dice" onclick="submitPhysicalDice(${i}, false)">${i}</button>`);
-            }
-          }
-          
-          buttons.push(`<button class="btn-dice" disabled style="opacity: 0.3;">12</button>`);
-          buttons.push(`<button class="btn-dice btn-success" onclick="submitPhysicalDice(0, true)" style="grid-column: span 2;">Doubles (×2)</button>`);
-          
-          container.innerHTML = buttons.join('');
+      if (rollCount < 3) {
+        // First 3 rolls: 2-12 with 7 special
+        const buttons = [];
+        for (let i = 2; i <= 12; i++) {
+          const label = i === 7 ? '7 (+70)' : i.toString();
+          buttons.push(`<button class="btn-dice" onclick="submitPhysicalDice(${i}, false)">${label}</button>`);
         }
-      });
+        container.innerHTML = buttons.join('');
+      } else {
+        // After 3 rolls: 3-11, 7 kills, doubles
+        const buttons = [];
+        
+        // 2 and 12 disabled
+        buttons.push(`<button class="btn-dice" disabled style="opacity: 0.3;">2</button>`);
+        
+        for (let i = 3; i <= 11; i++) {
+          if (i === 7) {
+            buttons.push(`<button class="btn-dice btn-danger" onclick="submitPhysicalDice(${i}, false)">7 (💀)</button>`);
+          } else {
+            buttons.push(`<button class="btn-dice" onclick="submitPhysicalDice(${i}, false)">${i}</button>`);
+          }
+        }
+        
+        buttons.push(`<button class="btn-dice" disabled style="opacity: 0.3;">12</button>`);
+        buttons.push(`<button class="btn-dice btn-success" onclick="submitPhysicalDice(0, true)" style="grid-column: span 2;">Doubles (×2)</button>`);
+        
+        container.innerHTML = buttons.join('');
+      }
     }
 
     // Game actions
@@ -748,12 +712,93 @@
       }).join('');
       document.getElementById('playerCards').innerHTML = cardsHtml;
       
-      // Update host toggle button visibility and state
-      updateInputMode();
-      
       // Action area
       const isMyTurn = currentPlayer.id === myId;
       const myPlayer = room.players.find(p => p.id === myId);
-      const usePhysicalDice = room.gameState.usePhysicalDice;
       
       // Can't roll if you've already banked OR if round is not active
+      const canRoll = isMyTurn && room.gameState.roundActive && !myPlayer.bankedThisRound;
+      
+      // Can bank if: not banked yet, at least 3 rolls done, round is still active
+      const canBank = myPlayer && !myPlayer.bankedThisRound && 
+                      room.gameState.rollCount >= 3 && 
+                      room.gameState.roundActive;
+      
+      // Show/hide main action areas
+      document.getElementById('yourTurnArea').style.display = canRoll ? 'block' : 'none';
+      document.getElementById('bankArea').style.display = canBank ? 'block' : 'none';
+      
+      // Determine what waiting message to show
+      const shouldWait = !canRoll;
+      document.getElementById('waitingArea').style.display = shouldWait ? 'block' : 'none';
+      
+      // Update waiting message based on state
+      if (myPlayer.bankedThisRound) {
+        // Player has banked - waiting for others
+        document.getElementById('waitingArea').innerHTML = '<p style="color: #10b981; font-weight: bold;">You\'ve banked! Waiting for others...</p>';
+      } else if (!room.gameState.roundActive) {
+        // Round is over - waiting for next round
+        document.getElementById('waitingArea').innerHTML = '<p style="color: #f59e0b; font-weight: bold;">Round Over - Waiting for next round...</p>';
+      } else if (!isMyTurn) {
+        // Not your turn - waiting for current player
+        document.getElementById('waitingArea').innerHTML = `<p style="color: #6b7280;">Waiting for ${currentPlayer.name}...</p>`;
+      }
+      
+      // Reset to virtual dice for new turn unless player explicitly used physical dice
+      if (canRoll) {
+        if (!myPlayer.usePhysicalDice) {
+          usePhysicalDice = false;
+        } else {
+          usePhysicalDice = true;
+        }
+        updateInputMode();
+      }
+      
+      // Host controls
+      if (isHost) {
+        document.getElementById('hostControls').style.display = 'flex';
+        
+        // Show appropriate button based on round state
+        if (!room.gameState.roundActive) {
+          // Round is over - show "Start Next Round" button
+          document.getElementById('nextTurnBtn').style.display = 'none';
+          document.getElementById('nextRoundBtn').style.display = 'block';
+        } else {
+          // Round is active - show "Next Turn" button
+          document.getElementById('nextTurnBtn').style.display = 'block';
+          document.getElementById('nextRoundBtn').style.display = 'none';
+        }
+      } else {
+        document.getElementById('hostControls').style.display = 'none';
+      }
+    }
+
+    function updateEndScreen(room) {
+      showScreen('endScreen');
+      
+      const sorted = [...room.players].sort((a, b) => b.lockedScore - a.lockedScore);
+      document.getElementById('winnerName').textContent = sorted[0].name + ' Wins!';
+      
+      const scoresHtml = sorted.map((p, i) => `
+        <div class="score-item">
+          <span>${i + 1}. ${p.name}</span>
+          <span>${p.lockedScore} points</span>
+        </div>
+      `).join('');
+      document.getElementById('finalScores').innerHTML = scoresHtml;
+    }
+
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    function showError(msg) {
+      const errorEl = document.getElementById('errorMsg');
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+      setTimeout(() => errorEl.style.display = 'none', 3000);
+    }
+  </script>
+</body>
+</html>
