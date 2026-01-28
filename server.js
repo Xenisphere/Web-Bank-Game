@@ -31,7 +31,8 @@ function createGameState(totalRounds = 20) {
     sharedRoundScore: 0,
     rollCount: 0,
     currentTurnIndex: 0,
-    lastRoll: null
+    lastRoll: null,
+    usePhysicalDice: false
   };
 }
 
@@ -190,6 +191,15 @@ io.on('connection', (socket) => {
     if (!room || room.hostId !== socket.id || room.gameState.status !== 'waiting') return;
     
     room.gameState.totalRounds = totalRounds;
+    io.to(socket.roomCode).emit('game_state_update', room);
+  });
+  
+  // Toggle dice mode (host only)
+  socket.on('toggle_dice_mode', () => {
+    const room = rooms.get(socket.roomCode);
+    if (!room || room.hostId !== socket.id) return;
+    
+    room.gameState.usePhysicalDice = !room.gameState.usePhysicalDice;
     io.to(socket.roomCode).emit('game_state_update', room);
   });
   
