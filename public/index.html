@@ -127,70 +127,70 @@
     /* Game Screen */
     .game-header {
       text-align: center;
-      margin-bottom: 20px;
-      padding: 20px;
+      margin-bottom: 15px;
+      padding: 15px;
       background: #f3f4f6;
       border-radius: 10px;
     }
-    .round-info { font-size: 1.2em; color: #6b7280; margin-bottom: 10px; }
+    .round-info { font-size: 1em; color: #6b7280; margin-bottom: 8px; }
     .shared-score {
-      font-size: 4em;
+      font-size: 3em;
       font-weight: bold;
       color: #667eea;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     }
-    .roll-count { color: #6b7280; margin-top: 5px; }
+    .roll-count { color: #6b7280; margin-top: 5px; font-size: 0.9em; }
     
     .last-roll {
-      margin-top: 15px;
-      padding: 15px;
+      margin-top: 10px;
+      padding: 10px;
       background: white;
-      border-radius: 10px;
+      border-radius: 8px;
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 15px;
+      gap: 10px;
     }
     .dice-display {
-      width: 60px;
-      height: 60px;
+      width: 45px;
+      height: 45px;
       background: white;
-      border: 3px solid #667eea;
-      border-radius: 10px;
+      border: 2px solid #667eea;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2em;
+      font-size: 1.5em;
       font-weight: bold;
       color: #667eea;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .dice-separator {
-      font-size: 2em;
+      font-size: 1.5em;
       color: #6b7280;
     }
     .dice-total {
-      padding: 10px 20px;
+      padding: 8px 15px;
       background: #667eea;
       color: white;
-      border-radius: 8px;
+      border-radius: 6px;
       font-weight: bold;
-      font-size: 1.2em;
+      font-size: 1em;
     }
     
     .sort-controls {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       justify-content: center;
-      margin-bottom: 15px;
+      margin-bottom: 10px;
     }
     .sort-btn {
-      padding: 8px 15px;
-      font-size: 0.9em;
+      padding: 6px 12px;
+      font-size: 0.85em;
       background: #e5e7eb;
       color: #374151;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
       transition: all 0.3s;
     }
@@ -202,41 +202,65 @@
       background: #d1d5db;
     }
     
+    .players-scroll-container {
+      max-height: 240px;
+      overflow-y: auto;
+      margin: 10px 0;
+      padding-right: 5px;
+    }
+    
+    .players-scroll-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .players-scroll-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    
+    .players-scroll-container::-webkit-scrollbar-thumb {
+      background: #667eea;
+      border-radius: 10px;
+    }
+    
+    .players-scroll-container::-webkit-scrollbar-thumb:hover {
+      background: #5568d3;
+    }
+    
     .players-grid {
       display: grid;
-      gap: 10px;
-      margin: 20px 0;
+      gap: 8px;
     }
     .player-card {
-      padding: 15px;
+      padding: 10px;
       background: #f9fafb;
-      border-radius: 10px;
-      border-left: 4px solid #ddd;
+      border-radius: 8px;
+      border-left: 3px solid #ddd;
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 10px;
+      gap: 8px;
     }
     .player-card.active { border-left-color: #667eea; background: #ede9fe; }
     .player-card.banked { border-left-color: #10b981; background: #d1fae5; }
-    .player-name { font-weight: bold; font-size: 1.1em; }
-    .player-scores { font-size: 0.9em; color: #6b7280; }
+    .player-name { font-weight: bold; font-size: 1em; }
+    .player-scores { font-size: 0.85em; color: #6b7280; margin-top: 2px; }
     .player-status {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
     }
     .badge {
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-size: 0.8em;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75em;
       font-weight: bold;
     }
     .badge-success { background: #10b981; color: white; }
     .badge-info { background: #3b82f6; color: white; }
     
     .action-area {
-      margin: 20px 0;
-      padding: 20px;
+      margin: 10px 0;
+      padding: 15px;
       background: #f3f4f6;
       border-radius: 10px;
       text-align: center;
@@ -245,20 +269,16 @@
     .dice-buttons {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
       justify-content: center;
-      margin: 15px 0;
-    }
-    
-    .toggle-input-mode {
-      margin-bottom: 15px;
+      margin: 10px 0;
     }
     
     .host-controls {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       justify-content: center;
-      margin-top: 20px;
+      margin-top: 15px;
     }
     
     .error-message {
@@ -316,6 +336,24 @@
       <div id="errorMsg" class="error-message" style="display: none;"></div>
     </div>
     
+    <!-- Reconnect Screen -->
+    <div id="reconnectScreen" class="screen">
+      <div style="text-align: center; padding: 20px;">
+        <h2 style="color: #667eea; margin-bottom: 20px;">🔄 Reconnecting...</h2>
+        <p style="color: #6b7280; margin-bottom: 30px;">We found your previous session!</p>
+        
+        <div style="background: #f3f4f6; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+          <p style="margin-bottom: 10px;"><strong>Room:</strong> <span id="reconnectRoomCode" style="color: #667eea; font-size: 1.5em;"></span></p>
+          <p><strong>Player:</strong> <span id="reconnectPlayerName"></span></p>
+        </div>
+        
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <button class="btn-success" onclick="confirmRejoin()" style="min-width: 150px;">Rejoin Game</button>
+          <button class="btn-danger" onclick="leaveSession()" style="min-width: 150px;">Leave Session</button>
+        </div>
+      </div>
+    </div>
+    
     <!-- Waiting Room -->
     <div id="waitingScreen" class="screen">
       <div class="room-code">
@@ -359,10 +397,12 @@
         <button class="sort-btn" onclick="setSortMode('projected')" id="sortProjectedBtn">By Projected Score</button>
       </div>
       
-      <div class="players-grid" id="playerCards"></div>
+      <div class="players-scroll-container">
+        <div class="players-grid" id="playerCards"></div>
+      </div>
       
       <!-- Host dice mode toggle (always visible to host during game) -->
-      <div id="hostDiceToggle" style="display: none; text-align: center; margin: 20px 0; padding: 15px; background: #f3f4f6; border-radius: 10px;">
+      <div id="hostDiceToggle" style="display: none; text-align: center; margin: 10px 0; padding: 10px; background: #f3f4f6; border-radius: 8px;">
         <button class="btn-secondary" onclick="toggleInputMode()" id="toggleModeBtn">Use Physical Dice</button>
       </div>
       
@@ -379,18 +419,18 @@
           <div id="physicalDiceArea" style="display: none;">
             <!-- For host: show input buttons -->
             <div id="physicalDiceHost" style="display: none;">
-              <div style="padding: 20px; background: white; border-radius: 10px; border: 2px dashed #667eea;">
-                <p style="font-size: 1.3em; color: #667eea; margin-bottom: 15px; font-weight: bold;">Enter the dice roll:</p>
+              <div style="padding: 15px; background: white; border-radius: 8px; border: 2px dashed #667eea;">
+                <p style="font-size: 1.1em; color: #667eea; margin-bottom: 10px; font-weight: bold;">Enter the dice roll:</p>
                 <div class="dice-buttons" id="diceButtons"></div>
               </div>
             </div>
             
             <!-- For regular players: simple message -->
             <div id="physicalDicePlayer" style="display: none;">
-              <div style="padding: 40px; background: white; border-radius: 10px; border: 3px solid #667eea; text-align: center;">
-                <p style="font-size: 2em; color: #667eea; margin-bottom: 10px;">🎲</p>
-                <p style="font-size: 1.5em; color: #667eea; font-weight: bold; margin-bottom: 10px;">Roll the Dice!</p>
-                <p style="color: #6b7280; font-size: 1.1em;">Wait for the host to enter your result</p>
+              <div style="padding: 30px; background: white; border-radius: 8px; border: 3px solid #667eea; text-align: center;">
+                <p style="font-size: 1.8em; color: #667eea; margin-bottom: 8px;">🎲</p>
+                <p style="font-size: 1.3em; color: #667eea; font-weight: bold; margin-bottom: 8px;">Roll the Dice!</p>
+                <p style="color: #6b7280; font-size: 1em;">Wait for the host to enter your result</p>
               </div>
             </div>
           </div>
@@ -398,11 +438,11 @@
         
         <!-- Host physical dice input area (shown when it's NOT host's turn but physical dice enabled) -->
         <div id="hostPhysicalInputArea" style="display: none;">
-          <div style="padding: 20px; background: white; border-radius: 10px; border: 2px solid #667eea; margin-bottom: 15px;">
-            <p style="font-size: 1.2em; color: #667eea; margin-bottom: 10px; font-weight: bold;">
+          <div style="padding: 15px; background: white; border-radius: 8px; border: 2px solid #667eea; margin-bottom: 10px;">
+            <p style="font-size: 1.1em; color: #667eea; margin-bottom: 8px; font-weight: bold;">
               <span id="currentPlayerForHost"></span>'s Turn
             </p>
-            <p style="color: #6b7280; margin-bottom: 15px;">Enter their dice roll:</p>
+            <p style="color: #6b7280; margin-bottom: 10px; font-size: 0.9em;">Enter their dice roll:</p>
             <div class="dice-buttons" id="diceButtonsForOthers"></div>
           </div>
         </div>
@@ -443,6 +483,7 @@
     let isHost = false;
     let sortMode = 'turn'; // 'turn', 'locked', or 'projected'
     let currentRoomCode = null;
+    let pendingReconnect = null; // Store session data for reconnect screen
 
     // Load saved session from localStorage
     function loadSession() {
@@ -455,10 +496,11 @@
     }
 
     // Save session to localStorage
-    function saveSession(roomCode, playerId) {
+    function saveSession(roomCode, playerId, playerName) {
       localStorage.setItem('bankGameSession', JSON.stringify({
         roomCode,
         playerId,
+        playerName,
         timestamp: Date.now()
       }));
     }
@@ -468,17 +510,39 @@
       localStorage.removeItem('bankGameSession');
     }
 
+    // Show reconnect screen
+    function showReconnectScreen(session) {
+      pendingReconnect = session;
+      document.getElementById('reconnectRoomCode').textContent = session.roomCode;
+      document.getElementById('reconnectPlayerName').textContent = session.playerName || 'Unknown';
+      showScreen('reconnectScreen');
+    }
+
+    // User confirms rejoin
+    function confirmRejoin() {
+      if (pendingReconnect) {
+        console.log('Attempting to reconnect...', pendingReconnect);
+        socket.emit('reconnect_player', {
+          roomCode: pendingReconnect.roomCode,
+          playerId: pendingReconnect.playerId
+        });
+      }
+    }
+
+    // User chooses to leave session
+    function leaveSession() {
+      clearSession();
+      pendingReconnect = null;
+      showScreen('joinScreen');
+    }
+
     // Try to reconnect on load
     window.addEventListener('load', () => {
       const session = loadSession();
       if (session) {
         // Check if session is less than 5 minutes old
         if (Date.now() - session.timestamp < 300000) {
-          console.log('Attempting to reconnect...', session);
-          socket.emit('reconnect_player', {
-            roomCode: session.roomCode,
-            playerId: session.playerId
-          });
+          showReconnectScreen(session);
         } else {
           clearSession();
         }
@@ -624,7 +688,11 @@
       myId = playerId;
       isHost = true;
       currentRoomCode = roomCode;
-      saveSession(roomCode, playerId);
+      
+      // Get player name from input
+      const playerName = document.getElementById('playerName').value.trim();
+      saveSession(roomCode, playerId, playerName);
+      
       document.getElementById('displayRoomCode').textContent = roomCode;
       showScreen('waitingScreen');
     });
@@ -632,6 +700,7 @@
     socket.on('reconnected', ({ playerId }) => {
       console.log('Successfully reconnected as:', playerId);
       myId = playerId;
+      pendingReconnect = null;
       // Game state update will come next and show the correct screen
     });
 
@@ -648,8 +717,9 @@
       }
       
       // Save session when joining a room
-      if (room.players.find(p => p.id === myId)) {
-        saveSession(room.roomCode, myId);
+      const myPlayer = room.players.find(p => p.id === myId);
+      if (myPlayer) {
+        saveSession(room.roomCode, myId, myPlayer.name);
       }
       
       isHost = room.hostId === myId;
@@ -665,6 +735,14 @@
 
     socket.on('error', ({ message }) => {
       showError(message);
+      
+      // If reconnection failed, show join screen
+      if (pendingReconnect) {
+        clearSession();
+        pendingReconnect = null;
+        showScreen('joinScreen');
+        showError('Unable to reconnect. Please join again.');
+      }
     });
 
     // UI update functions
