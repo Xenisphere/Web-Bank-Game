@@ -194,6 +194,31 @@ io.on('connection', (socket) => {
     io.to(socket.roomCode).emit('game_state_update', room);
   });
   
+  // Reorder players (host only, waiting room only)
+  socket.on('reorder_players', ({ draggedPlayerId, droppedOnPlayerId }) => {
+    const room = rooms.get(socket.roomCode);
+    if (!room || room.hostId !== socket.id || room.gameState.status !== 'waiting') return;
+    
+    const draggedIndex = room.players.findIndex(p => p.id === draggedPlayerId);
+    const droppedOnIndex = room.players.findIndex(p => p.id === droppedOnPlayerId);
+    
+    if (draggedIndex === -1 || droppedOnIndex === -1) return;
+    
+    // Remove dragged player
+    const [draggedPlayer] = room.players.splice(draggedIndex, 1);
+    
+    // Insert at new position
+    const newIndex = draggedIndex < droppedOnIndex ? droppedOnIndex : droppedOnIndex;
+    room.players.splice(newIndex, 0, draggedPlayer);
+    
+    // Update turn order
+    room.players.forEach((p, i) => {
+      p.turnOrder = i;
+    });
+    
+    io.to(socket.roomCode).emit('game_state_update', room);
+  });
+  
   // Toggle dice mode (host only)
   socket.on('toggle_dice_mode', () => {
     const room = rooms.get(socket.roomCode);
