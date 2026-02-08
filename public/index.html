@@ -773,13 +773,12 @@
       
       const list = document.getElementById('waitingPlayerList');
       list.innerHTML = room.players.map((p, i) => {
-        const draggable = isHost ? 'draggable' : '';
         const dragHandle = isHost ? '<span class="drag-handle">☰</span>' : '';
         
         return `
-          <div class="player-item ${draggable}" 
+          <div class="player-item ${isHost ? 'draggable' : ''}" 
                data-player-id="${p.id}"
-               ${isHost ? `draggable="true"` : ''}>
+               draggable="${isHost ? 'true' : 'false'}">
             <span>${dragHandle}${i + 1}. ${p.name} ${p.id === room.hostId ? '(Host)' : ''}</span>
           </div>
         `;
@@ -787,7 +786,10 @@
       
       // Add drag and drop event listeners if host
       if (isHost) {
-        setupDragAndDrop();
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          setupDragAndDrop();
+        }, 100);
       }
       
       document.getElementById('startGameBtn').style.display = isHost ? 'block' : 'none';
@@ -801,30 +803,47 @@
     function setupDragAndDrop() {
       const items = document.querySelectorAll('.player-item.draggable');
       
+      console.log('Setting up drag and drop for', items.length, 'items');
+      
       items.forEach(item => {
-        item.addEventListener('dragstart', handleDragStart);
-        item.addEventListener('dragend', handleDragEnd);
-        item.addEventListener('dragover', handleDragOver);
-        item.addEventListener('drop', handleDrop);
-        item.addEventListener('dragleave', handleDragLeave);
+        // Remove old listeners first
+        item.removeEventListener('dragstart', handleDragStart);
+        item.removeEventListener('dragend', handleDragEnd);
+        item.removeEventListener('dragover', handleDragOver);
+        item.removeEventListener('drop', handleDrop);
+        item.removeEventListener('dragleave', handleDragLeave);
+        item.removeEventListener('dragenter', handleDragEnter);
+        
+        // Add new listeners
+        item.addEventListener('dragstart', handleDragStart, false);
+        item.addEventListener('dragend', handleDragEnd, false);
+        item.addEventListener('dragover', handleDragOver, false);
+        item.addEventListener('drop', handleDrop, false);
+        item.addEventListener('dragleave', handleDragLeave, false);
+        item.addEventListener('dragenter', handleDragEnter, false);
       });
     }
 
     function handleDragStart(e) {
+      console.log('Drag started');
       draggedElement = this;
       draggedPlayerId = this.getAttribute('data-player-id');
       this.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/html', this.innerHTML);
+      e.dataTransfer.setData('text/plain', draggedPlayerId);
     }
 
     function handleDragEnd(e) {
+      console.log('Drag ended');
       this.classList.remove('dragging');
       
       // Remove all drag-over classes
       document.querySelectorAll('.player-item').forEach(item => {
         item.classList.remove('drag-over');
       });
+      
+      draggedElement = null;
+      draggedPlayerId = null;
     }
 
     function handleDragOver(e) {
@@ -833,25 +852,37 @@
       }
       
       e.dataTransfer.dropEffect = 'move';
-      
-      if (this !== draggedElement) {
-        this.classList.add('drag-over');
-      }
-      
       return false;
     }
 
+    function handleDragEnter(e) {
+      if (this !== draggedElement) {
+        this.classList.add('drag-over');
+      }
+    }
+
     function handleDragLeave(e) {
-      this.classList.remove('drag-over');
+      // Only remove if we're actually leaving this element
+      if (e.target === this) {
+        this.classList.remove('drag-over');
+      }
     }
 
     function handleDrop(e) {
+      console.log('Dropped');
       if (e.stopPropagation) {
         e.stopPropagation();
       }
+      if (e.preventDefault) {
+        e.preventDefault();
+      }
+      
+      this.classList.remove('drag-over');
       
       if (draggedElement !== this) {
         const droppedOnPlayerId = this.getAttribute('data-player-id');
+        
+        console.log('Reordering:', draggedPlayerId, 'to position of', droppedOnPlayerId);
         
         // Send reorder request to server
         socket.emit('reorder_players', {
