@@ -108,6 +108,9 @@
     .player-item.draggable {
       cursor: move;
       transition: all 0.2s;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
     }
     .player-item.draggable:hover {
       background: #f3f4f6;
@@ -115,9 +118,17 @@
     }
     .player-item.dragging {
       opacity: 0.5;
+      background: #e0e7ff;
     }
     .player-item.drag-over {
       border-top: 3px solid #667eea;
+    }
+    .player-item.touch-dragging {
+      position: fixed;
+      z-index: 1000;
+      opacity: 0.8;
+      transform: scale(1.05);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
     }
     .drag-handle {
       color: #9ca3af;
@@ -799,6 +810,9 @@
     // Drag and drop functionality
     let draggedElement = null;
     let draggedPlayerId = null;
+    let touchDragElement = null;
+    let touchStartY = 0;
+    let touchCurrentY = 0;
 
     function setupDragAndDrop() {
       const items = document.querySelectorAll('.player-item.draggable');
@@ -814,16 +828,105 @@
         item.removeEventListener('dragleave', handleDragLeave);
         item.removeEventListener('dragenter', handleDragEnter);
         
-        // Add new listeners
+        // Touch events for mobile
+        item.removeEventListener('touchstart', handleTouchStart);
+        item.removeEventListener('touchmove', handleTouchMove);
+        item.removeEventListener('touchend', handleTouchEnd);
+        
+        // Add desktop drag listeners
         item.addEventListener('dragstart', handleDragStart, false);
         item.addEventListener('dragend', handleDragEnd, false);
         item.addEventListener('dragover', handleDragOver, false);
         item.addEventListener('drop', handleDrop, false);
         item.addEventListener('dragleave', handleDragLeave, false);
         item.addEventListener('dragenter', handleDragEnter, false);
+        
+        // Add touch listeners for mobile
+        item.addEventListener('touchstart', handleTouchStart, { passive: false });
+        item.addEventListener('touchmove', handleTouchMove, { passive: false });
+        item.addEventListener('touchend', handleTouchEnd, false);
       });
     }
 
+    // Touch event handlers for mobile
+    function handleTouchStart(e) {
+      console.log('Touch start');
+      e.preventDefault();
+      
+      touchDragElement = this;
+      draggedPlayerId = this.getAttribute('data-player-id');
+      
+      const touch = e.touches[0];
+      touchStartY = touch.clientY;
+      
+      this.classList.add('touch-dragging');
+    }
+
+    function handleTouchMove(e) {
+      if (!touchDragElement) return;
+      e.preventDefault();
+      
+      const touch = e.touches[0];
+      touchCurrentY = touch.clientY;
+      
+      // Move the element visually
+      const deltaY = touchCurrentY - touchStartY;
+      touchDragElement.style.transform = `translateY(${deltaY}px)`;
+      
+      // Find element under touch point
+      touchDragElement.style.pointerEvents = 'none';
+      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+      touchDragElement.style.pointerEvents = '';
+      
+      // Remove all drag-over classes
+      document.querySelectorAll('.player-item').forEach(item => {
+        item.classList.remove('drag-over');
+      });
+      
+      // Add drag-over to element below
+      if (elementBelow && elementBelow.classList.contains('player-item')) {
+        elementBelow.classList.add('drag-over');
+      }
+    }
+
+    function handleTouchEnd(e) {
+      if (!touchDragElement) return;
+      console.log('Touch end');
+      e.preventDefault();
+      
+      const touch = e.changedTouches[0];
+      
+      // Find element under touch point
+      touchDragElement.style.pointerEvents = 'none';
+      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+      touchDragElement.style.pointerEvents = '';
+      
+      // Reset visual state
+      touchDragElement.classList.remove('touch-dragging');
+      touchDragElement.style.transform = '';
+      
+      // Remove all drag-over classes
+      document.querySelectorAll('.player-item').forEach(item => {
+        item.classList.remove('drag-over');
+      });
+      
+      // Handle drop
+      if (elementBelow && elementBelow.classList.contains('player-item') && elementBelow !== touchDragElement) {
+        const droppedOnPlayerId = elementBelow.getAttribute('data-player-id');
+        
+        console.log('Touch reordering:', draggedPlayerId, 'to position of', droppedOnPlayerId);
+        
+        socket.emit('reorder_players', {
+          draggedPlayerId: draggedPlayerId,
+          droppedOnPlayerId: droppedOnPlayerId
+        });
+      }
+      
+      touchDragElement = null;
+      draggedPlayerId = null;
+    }
+
+    // Desktop drag handlers
     function handleDragStart(e) {
       console.log('Drag started');
       draggedElement = this;
