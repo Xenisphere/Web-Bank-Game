@@ -28,6 +28,10 @@
       margin-bottom: 30px;
       font-size: 2.5em;
     }
+    h1.in-game {
+      margin-bottom: 15px;
+      font-size: 2em;
+    }
     .screen { display: none; }
     .screen.active { display: block; }
     
@@ -171,6 +175,11 @@
       text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     }
     .roll-count { color: #6b7280; margin-top: 5px; font-size: 0.9em; }
+    
+    .roll-button-area {
+      margin-top: 15px;
+      text-align: center;
+    }
     
     .last-roll {
       margin-top: 10px;
@@ -353,7 +362,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>🎲 Bank</h1>
+    <h1 id="gameTitle">🎲 Bank</h1>
     
     <!-- Join/Create Screen -->
     <div id="joinScreen" class="screen active">
@@ -420,30 +429,12 @@
           <div class="dice-separator">=</div>
           <div class="dice-total" id="diceTotal">?</div>
         </div>
-      </div>
-      
-      <div class="sort-controls">
-        <button class="sort-btn active" onclick="setSortMode('turn')" id="sortTurnBtn">Turn Order</button>
-        <button class="sort-btn" onclick="setSortMode('locked')" id="sortLockedBtn">By Locked Score</button>
-        <button class="sort-btn" onclick="setSortMode('projected')" id="sortProjectedBtn">By Projected Score</button>
-      </div>
-      
-      <div class="players-scroll-container">
-        <div class="players-grid" id="playerCards"></div>
-      </div>
-      
-      <!-- Host dice mode toggle (always visible to host during game) -->
-      <div id="hostDiceToggle" style="display: none; text-align: center; margin: 10px 0; padding: 10px; background: #f3f4f6; border-radius: 8px;">
-        <button class="btn-secondary" onclick="toggleInputMode()" id="toggleModeBtn">Use Physical Dice</button>
-      </div>
-      
-      <div class="action-area">
-        <div id="yourTurnArea" style="display: none;">
-          <h3>Your Turn!</h3>
-          
+        
+        <!-- Roll button area moved here -->
+        <div class="roll-button-area" id="rollButtonArea" style="display: none;">
           <!-- Virtual dice roll -->
           <div id="virtualDiceArea">
-            <button class="btn-primary" onclick="rollDice()" style="font-size: 1.5em; padding: 20px 40px;">🎲 Roll Dice</button>
+            <button class="btn-primary" onclick="rollDice()" id="rollButton" style="font-size: 1.5em; padding: 20px 40px;">🎲 Roll Dice</button>
           </div>
           
           <!-- Physical dice prompt -->
@@ -466,7 +457,24 @@
             </div>
           </div>
         </div>
-        
+      </div>
+      
+      <div class="sort-controls">
+        <button class="sort-btn active" onclick="setSortMode('turn')" id="sortTurnBtn">Turn Order</button>
+        <button class="sort-btn" onclick="setSortMode('locked')" id="sortLockedBtn">By Locked Score</button>
+        <button class="sort-btn" onclick="setSortMode('projected')" id="sortProjectedBtn">By Projected Score</button>
+      </div>
+      
+      <div class="players-scroll-container">
+        <div class="players-grid" id="playerCards"></div>
+      </div>
+      
+      <!-- Host dice mode toggle (always visible to host during game) -->
+      <div id="hostDiceToggle" style="display: none; text-align: center; margin: 10px 0; padding: 10px; background: #f3f4f6; border-radius: 8px;">
+        <button class="btn-secondary" onclick="toggleInputMode()" id="toggleModeBtn">Use Physical Dice</button>
+      </div>
+      
+      <div class="action-area">
         <!-- Host physical dice input area (shown when it's NOT host's turn but physical dice enabled) -->
         <div id="hostPhysicalInputArea" style="display: none;">
           <div style="padding: 15px; background: white; border-radius: 8px; border: 2px solid #667eea; margin-bottom: 10px;">
@@ -515,6 +523,7 @@
     let sortMode = 'turn'; // 'turn', 'locked', or 'projected'
     let currentRoomCode = null;
     let pendingReconnect = null; // Store session data for reconnect screen
+    let cooldownInterval = null; // Countdown timer interval
 
     // Load saved session from localStorage
     function loadSession() {
@@ -579,6 +588,39 @@
         }
       }
     });
+
+    // Update cooldown display
+    function updateCooldown() {
+      if (!gameState || !gameState.gameState.rollCooldownUntil) {
+        clearInterval(cooldownInterval);
+        cooldownInterval = null;
+        return;
+      }
+
+      const rollButton = document.getElementById('rollButton');
+      const now = Date.now();
+      const timeLeft = gameState.gameState.rollCooldownUntil - now;
+
+      if (timeLeft > 0) {
+        const seconds = Math.ceil(timeLeft / 1000);
+        rollButton.textContent = `${seconds}`;
+        rollButton.disabled = true;
+      } else {
+        rollButton.textContent = '🎲 Roll Dice';
+        rollButton.disabled = false;
+        clearInterval(cooldownInterval);
+        cooldownInterval = null;
+      }
+    }
+
+    // Start cooldown timer
+    function startCooldownTimer() {
+      if (cooldownInterval) {
+        clearInterval(cooldownInterval);
+      }
+      updateCooldown();
+      cooldownInterval = setInterval(updateCooldown, 100);
+    }
 
     // Join/Create functions
     function createRoom() {
@@ -759,6 +801,11 @@
         updateWaitingRoom(room);
       } else if (room.gameState.status === 'playing') {
         updateGameScreen(room);
+        
+        // Start cooldown timer if there's a cooldown
+        if (room.gameState.rollCooldownUntil) {
+          startCooldownTimer();
+        }
       } else if (room.gameState.status === 'finished') {
         updateEndScreen(room);
       }
@@ -779,6 +826,10 @@
     // UI update functions
     function updateWaitingRoom(room) {
       showScreen('waitingScreen');
+      
+      // Show title on waiting screen
+      document.getElementById('gameTitle').style.display = 'block';
+      
       document.getElementById('displayRoomCode').textContent = room.roomCode;
       document.getElementById('totalRoundsInput').value = room.gameState.totalRounds;
       
@@ -1000,6 +1051,9 @@
     function updateGameScreen(room) {
       showScreen('gameScreen');
       
+      // Hide title during game
+      document.getElementById('gameTitle').style.display = 'none';
+      
       document.getElementById('currentRound').textContent = room.gameState.currentRound;
       document.getElementById('totalRounds').textContent = room.gameState.totalRounds;
       document.getElementById('sharedScore').textContent = room.gameState.sharedRoundScore;
@@ -1077,8 +1131,8 @@
                       room.gameState.rollCount >= 3 && 
                       room.gameState.roundActive;
       
-      // Show/hide main action areas
-      document.getElementById('yourTurnArea').style.display = canRoll ? 'block' : 'none';
+      // Show/hide roll button area and bank area
+      document.getElementById('rollButtonArea').style.display = canRoll ? 'block' : 'none';
       document.getElementById('bankArea').style.display = canBank ? 'block' : 'none';
       
       // Update input mode for player's turn
@@ -1155,6 +1209,9 @@
 
     function updateEndScreen(room) {
       showScreen('endScreen');
+      
+      // Show title on end screen
+      document.getElementById('gameTitle').style.display = 'block';
       
       const sorted = [...room.players].sort((a, b) => b.lockedScore - a.lockedScore);
       document.getElementById('winnerName').textContent = sorted[0].name + ' Wins!';
