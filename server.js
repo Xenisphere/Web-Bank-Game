@@ -491,14 +491,14 @@ io.on('connection', (socket) => {
       player.disconnectTime = Date.now();
     }
     
-    // Give them 60 seconds to reconnect before removing
+    // Give them 5 minutes to reconnect before removing
     setTimeout(() => {
       const room = rooms.get(socket.roomCode);
       if (!room) return;
       
       const player = room.players.find(p => p.id === socket.id);
       if (player && player.disconnected) {
-        // Still disconnected after 60s, remove them
+        // Still disconnected after 5 minutes, remove them
         room.players = room.players.filter(p => p.id !== socket.id);
         
         // If host left and players remain, assign new host
@@ -513,7 +513,7 @@ io.on('connection', (socket) => {
           io.to(socket.roomCode).emit('game_state_update', room);
         }
       }
-    }, 60000); // 60 second grace period
+    }, 300000); // 5 minute grace period
     
     io.to(socket.roomCode).emit('game_state_update', room);
   });
