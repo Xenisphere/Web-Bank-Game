@@ -11,16 +11,27 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
+      height: 100vh;
       padding: 20px;
       color: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
     .container {
       max-width: 800px;
+      width: 100%;
+      height: 95vh;
+      max-height: 900px;
       margin: 0 auto;
       background: white;
       border-radius: 20px;
       padding: 30px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
     h1 {
       text-align: center;
@@ -32,8 +43,15 @@
       margin-bottom: 15px;
       font-size: 2em;
     }
-    .screen { display: none; }
-    .screen.active { display: block; }
+    .screen { 
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+    .screen.active { 
+      display: flex;
+    }
     
     /* Join/Create Screen */
     .join-controls {
@@ -160,12 +178,17 @@
     }
     
     /* Game Screen */
+    #gameScreen {
+      display: flex;
+      flex-direction: column;
+    }
     .game-header {
       text-align: center;
       margin-bottom: 15px;
       padding: 15px;
       background: #f3f4f6;
       border-radius: 10px;
+      flex-shrink: 0;
     }
     .round-info { font-size: 1em; color: #6b7280; margin-bottom: 8px; }
     .shared-score {
@@ -223,6 +246,7 @@
       gap: 8px;
       justify-content: center;
       margin-bottom: 10px;
+      flex-shrink: 0;
     }
     .sort-btn {
       padding: 6px 12px;
@@ -243,10 +267,11 @@
     }
     
     .players-scroll-container {
-      max-height: 240px;
+      flex: 1;
       overflow-y: auto;
       margin: 10px 0;
       padding-right: 5px;
+      min-height: 0;
     }
     
     .players-scroll-container::-webkit-scrollbar {
@@ -304,6 +329,7 @@
       background: #f3f4f6;
       border-radius: 10px;
       text-align: center;
+      flex-shrink: 0;
     }
     
     .dice-buttons {
@@ -319,6 +345,7 @@
       gap: 8px;
       justify-content: center;
       margin-top: 15px;
+      flex-shrink: 0;
     }
     
     .error-message {
@@ -470,7 +497,7 @@
       </div>
       
       <!-- Host dice mode toggle (always visible to host during game) -->
-      <div id="hostDiceToggle" style="display: none; text-align: center; margin: 10px 0; padding: 10px; background: #f3f4f6; border-radius: 8px;">
+      <div id="hostDiceToggle" style="display: none; text-align: center; margin: 10px 0; padding: 10px; background: #f3f4f6; border-radius: 8px; flex-shrink: 0;">
         <button class="btn-secondary" onclick="toggleInputMode()" id="toggleModeBtn">Use Physical Dice</button>
       </div>
       
@@ -598,6 +625,12 @@
       }
 
       const rollButton = document.getElementById('rollButton');
+      if (!rollButton) {
+        clearInterval(cooldownInterval);
+        cooldownInterval = null;
+        return;
+      }
+      
       const now = Date.now();
       const timeLeft = gameState.gameState.rollCooldownUntil - now;
 
@@ -801,11 +834,6 @@
         updateWaitingRoom(room);
       } else if (room.gameState.status === 'playing') {
         updateGameScreen(room);
-        
-        // Start cooldown timer if there's a cooldown
-        if (room.gameState.rollCooldownUntil) {
-          startCooldownTimer();
-        }
       } else if (room.gameState.status === 'finished') {
         updateEndScreen(room);
       }
@@ -1054,6 +1082,12 @@
       // Hide title during game
       document.getElementById('gameTitle').style.display = 'none';
       
+      // Clear existing cooldown timer
+      if (cooldownInterval) {
+        clearInterval(cooldownInterval);
+        cooldownInterval = null;
+      }
+      
       document.getElementById('currentRound').textContent = room.gameState.currentRound;
       document.getElementById('totalRounds').textContent = room.gameState.totalRounds;
       document.getElementById('sharedScore').textContent = room.gameState.sharedRoundScore;
@@ -1157,6 +1191,11 @@
         } else {
           virtualArea.style.display = 'block';
           physicalArea.style.display = 'none';
+        }
+        
+        // Start cooldown timer if there's a cooldown active
+        if (room.gameState.rollCooldownUntil && Date.now() < room.gameState.rollCooldownUntil) {
+          startCooldownTimer();
         }
       }
       
