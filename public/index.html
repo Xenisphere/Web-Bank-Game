@@ -182,8 +182,656 @@
       display: flex;
       flex-direction: column;
     }
-    #gameScreen:not(.active) {
-      display: none !important;
+    .game-header {
+      text-align: center;
+      margin-bottom: 15px;
+      padding: 15px;
+      background: #f3f4f6;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+    .round-info { font-size: 1em; color: #6b7280; margin-bottom: 8px; }
+    .shared-score {
+      font-size: 3em;
+      font-weight: bold;
+      color: #667eea;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    .roll-count { color: #6b7280; margin-top: 5px; font-size: 0.9em; }
+    
+    .roll-button-area {
+      margin-top: 15px;
+      text-align: center;
+    }
+    
+    .last-roll {
+      margin-top: 10px;
+      padding: 10px;
+      background: white;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+    .dice-display {
+      width: 45px;
+      height: 45px;
+      background: white;
+      border: 2px solid #667eea;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5em;
+      font-weight: bold;
+      color: #667eea;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .dice-separator {
+      font-size: 1.5em;
+      color: #6b7280;
+    }
+    .dice-total {
+      padding: 8px 15px;
+      background: #667eea;
+      color: white;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 1em;
+    }
+    
+    .sort-controls {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+    .sort-btn {
+      padding: 6px 12px;
+      font-size: 0.85em;
+      background: #e5e7eb;
+      color: #374151;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .sort-btn.active {
+      background: #667eea;
+      color: white;
+    }
+    .sort-btn:hover:not(.active) {
+      background: #d1d5db;
+    }
+    
+    .players-scroll-container {
+      flex: 1;
+      overflow-y: auto;
+      margin: 10px 0;
+      padding-right: 5px;
+      min-height: 0;
+    }
+    
+    .players-scroll-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .players-scroll-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    
+    .players-scroll-container::-webkit-scrollbar-thumb {
+      background: #667eea;
+      border-radius: 10px;
+    }
+    
+    .players-scroll-container::-webkit-scrollbar-thumb:hover {
+      background: #5568d3;
+    }
+    
+    .players-grid {
+      display: grid;
+      gap: 8px;
+    }
+    .player-card {
+      padding: 10px;
+      background: #f9fafb;
+      border-radius: 8px;
+      border-left: 3px solid #ddd;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+    .player-card.active { border-left-color: #667eea; background: #ede9fe; }
+    .player-card.banked { border-left-color: #10b981; background: #d1fae5; }
+    .player-name { font-weight: bold; font-size: 1em; }
+    .player-scores { font-size: 0.85em; color: #6b7280; margin-top: 2px; }
+    .player-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75em;
+      font-weight: bold;
+    }
+    .badge-success { background: #10b981; color: white; }
+    .badge-info { background: #3b82f6; color: white; }
+    
+    .action-area {
+      margin: 10px 0;
+      padding: 15px;
+      background: #f3f4f6;
+      border-radius: 10px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    
+    .dice-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin: 10px 0;
+    }
+    
+    .host-controls {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 15px;
+      flex-shrink: 0;
+    }
+    
+    .error-message {
+      background: #fee2e2;
+      color: #dc2626;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+      text-align: center;
+    }
+    
+    /* End Screen */
+    .winner-announcement {
+      text-align: center;
+      padding: 30px;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      border-radius: 10px;
+      margin: 20px 0;
+      color: white;
+    }
+    .winner-announcement h2 { font-size: 2.5em; margin-bottom: 10px; }
+    .final-scores {
+      margin: 20px 0;
+    }
+    .score-item {
+      padding: 15px;
+      margin: 10px 0;
+      background: #f9fafb;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.2em;
+    }
+    .score-item:first-child {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: white;
+      font-weight: bold;
+      font-size: 1.5em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="gameTitle">🎲 Bank</h1>
+    
+    <!-- Join/Create Screen -->
+    <div id="joinScreen" class="screen active">
+      <div class="join-controls">
+        <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+        <button class="btn-primary" onclick="createRoom()">Create New Game</button>
+        <div style="text-align: center; margin: 10px 0;">— OR —</div>
+        <input type="text" id="roomCodeInput" placeholder="Enter room code" maxlength="4" style="text-transform: uppercase;">
+        <button class="btn-secondary" onclick="joinRoom()">Join Game</button>
+      </div>
+      <div id="errorMsg" class="error-message" style="display: none;"></div>
+    </div>
+    
+    <!-- Reconnect Screen -->
+    <div id="reconnectScreen" class="screen">
+      <div style="text-align: center; padding: 20px;">
+        <h2 style="color: #667eea; margin-bottom: 20px;">🔄 Reconnecting...</h2>
+        <p style="color: #6b7280; margin-bottom: 30px;">We found your previous session!</p>
+        
+        <div style="background: #f3f4f6; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+          <p style="margin-bottom: 10px;"><strong>Room:</strong> <span id="reconnectRoomCode" style="color: #667eea; font-size: 1.5em;"></span></p>
+          <p><strong>Player:</strong> <span id="reconnectPlayerName"></span></p>
+        </div>
+        
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <button class="btn-success" onclick="confirmRejoin()" style="min-width: 150px;">Rejoin Game</button>
+          <button class="btn-danger" onclick="leaveSession()" style="min-width: 150px;">Leave Session</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Waiting Room -->
+    <div id="waitingScreen" class="screen">
+      <div class="room-code">
+        <p>Room Code</p>
+        <h2 id="displayRoomCode"></h2>
+        <p style="margin-top: 10px; color: #6b7280;">Share this code with friends!</p>
+      </div>
+      
+      <div class="rounds-config" id="roundsConfig" style="display: none;">
+        <label for="totalRoundsInput">Number of Rounds:</label>
+        <input type="number" id="totalRoundsInput" min="1" max="50" value="20" onchange="setRounds()">
+      </div>
+      
+      <div class="player-list">
+        <h3 style="margin-bottom: 15px;">Players</h3>
+        <div id="waitingPlayerList"></div>
+      </div>
+      <div style="text-align: center;">
+        <button id="startGameBtn" class="btn-success" onclick="startGame()" style="display: none;">Start Game</button>
+      </div>
+    </div>
+    
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen">
+      <div class="game-header">
+        <div class="round-info">Round <span id="currentRound">1</span> / <span id="totalRounds">20</span></div>
+        <div class="shared-score" id="sharedScore">0</div>
+        <div class="roll-count">Roll <span id="rollCount">0</span></div>
+        <div class="last-roll" id="lastRollDisplay" style="display: none;">
+          <div class="dice-display" id="die1Display">?</div>
+          <div class="dice-separator">+</div>
+          <div class="dice-display" id="die2Display">?</div>
+          <div class="dice-separator">=</div>
+          <div class="dice-total" id="diceTotal">?</div>
+        </div>
+        
+        <!-- Roll button area moved here -->
+        <div class="roll-button-area" id="rollButtonArea" style="display: none;">
+          <!-- Virtual dice roll -->
+          <div id="virtualDiceArea">
+            <button class="btn-primary" onclick="rollDice()" id="rollButton" style="font-size: 1.5em; padding: 20px 40px;">🎲 Roll Dice</button>
+          </div>
+          
+          <!-- Physical dice prompt -->
+          <div id="physicalDiceArea" style="display: none;">
+            <!-- For host: show input buttons -->
+            <div id="physicalDiceHost" style="display: none;">
+              <div style="padding: 15px; background: white; border-radius: 8px; border: 2px dashed #667eea;">
+                <p style="font-size: 1.1em; color: #667eea; margin-bottom: 10px; font-weight: bold;">Enter the dice roll:</p>
+                <div class="dice-buttons" id="diceButtons"></div>
+              </div>
+            </div>
+            
+            <!-- For regular players: simple message -->
+            <div id="physicalDicePlayer" style="display: none;">
+              <div style="padding: 30px; background: white; border-radius: 8px; border: 3px solid #667eea; text-align: center;">
+                <p style="font-size: 1.8em; color: #667eea; margin-bottom: 8px;">🎲</p>
+                <p style="font-size: 1.3em; color: #667eea; font-weight: bold; margin-bottom: 8px;">Roll the Dice!</p>
+                <p style="color: #6b7280; font-size: 1em;">Wait for the host to enter your result</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="sort-controls">
+        <button class="sort-btn active" onclick="setSortMode('turn')" id="sortTurnBtn">Turn Order</button>
+        <button class="sort-btn" onclick="setSortMode('locked')" id="sortLockedBtn">By Locked Score</button>
+        <button class="sort-btn" onclick="setSortMode('projected')" id="sortProjectedBtn">By Projected Score</button>
+      </div>
+      
+      <div class="players-scroll-container">
+        <div class="players-grid" id="playerCards"></div>
+      </div>
+      
+      <!-- Host dice mode toggle (always visible to host during game) -->
+      <div id="hostDiceToggle" style="display: none; text-align: center; margin: 10px 0; padding: 10px; background: #f3f4f6; border-radius: 8px; flex-shrink: 0;">
+        <button class="btn-secondary" onclick="toggleInputMode()" id="toggleModeBtn">Use Physical Dice</button>
+      </div>
+      
+      <div class="action-area">
+        <!-- Host physical dice input area (shown when it's NOT host's turn but physical dice enabled) -->
+        <div id="hostPhysicalInputArea" style="display: none;">
+          <div style="padding: 15px; background: white; border-radius: 8px; border: 2px solid #667eea; margin-bottom: 10px;">
+            <p style="font-size: 1.1em; color: #667eea; margin-bottom: 8px; font-weight: bold;">
+              <span id="currentPlayerForHost"></span>'s Turn
+            </p>
+            <p style="color: #6b7280; margin-bottom: 10px; font-size: 0.9em;">Enter their dice roll:</p>
+            <div class="dice-buttons" id="diceButtonsForOthers"></div>
+          </div>
+        </div>
+        
+        <div id="bankArea" style="display: none;">
+          <button class="btn-success" onclick="bank()">🏦 Bank Now</button>
+        </div>
+        
+        <div id="waitingArea">
+          <p style="color: #6b7280;">Waiting for <span id="currentPlayerName"></span>...</p>
+        </div>
+      </div>
+      
+      <div class="host-controls" id="hostControls" style="display: none;">
+        <button class="btn-secondary" onclick="nextTurn()" id="nextTurnBtn">Next Turn →</button>
+        <button class="btn-success" onclick="nextTurn()" id="nextRoundBtn" style="display: none;">Start Next Round →</button>
+        <button class="btn-danger" onclick="undo()">↶ Undo</button>
+      </div>
+    </div>
+    
+    <!-- End Screen -->
+    <div id="endScreen" class="screen">
+      <div class="winner-announcement">
+        <h2>🏆</h2>
+        <h2 id="winnerName">Winner</h2>
+      </div>
+      <div class="final-scores" id="finalScores"></div>
+      <div style="text-align: center; margin-top: 20px;">
+        <button class="btn-primary" onclick="location.reload()">New Game</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let gameState = null;
+    let myId = null;
+    let isHost = false;
+    let sortMode = 'turn'; // 'turn', 'locked', or 'projected'
+    let currentRoomCode = null;
+    let pendingReconnect = null; // Store session data for reconnect screen
+    let cooldownInterval = null; // Countdown timer interval
+
+    // Load saved session from localStorage
+    function loadSession() {
+      const savedSession = localStorage.getItem('bankGameSession');
+      if (savedSession) {
+        const session = JSON.parse(savedSession);
+        return session;
+      }
+      return null;
+    }
+
+    // Save session to localStorage
+    function saveSession(roomCode, playerId, playerName) {
+      localStorage.setItem('bankGameSession', JSON.stringify({
+        roomCode,
+        playerId,
+        playerName,
+        timestamp: Date.now()
+      }));
+    }
+
+    // Clear session
+    function clearSession() {
+      localStorage.removeItem('bankGameSession');
+    }
+
+    // Show reconnect screen
+    function showReconnectScreen(session) {
+      pendingReconnect = session;
+      document.getElementById('reconnectRoomCode').textContent = session.roomCode;
+      document.getElementById('reconnectPlayerName').textContent = session.playerName || 'Unknown';
+      showScreen('reconnectScreen');
+    }
+
+    // User confirms rejoin
+    function confirmRejoin() {
+      if (pendingReconnect) {
+        console.log('Attempting to reconnect...', pendingReconnect);
+        socket.emit('reconnect_player', {
+          roomCode: pendingReconnect.roomCode,
+          playerId: pendingReconnect.playerId
+        });
+      }
+    }
+
+    // User chooses to leave session
+    function leaveSession() {
+      clearSession();
+      pendingReconnect = null;
+      showScreen('joinScreen');
+    }
+
+    // Try to reconnect on load
+    window.addEventListener('load', () => {
+      const session = loadSession();
+      if (session) {
+        // Check if session is less than 5 minutes old
+        if (Date.now() - session.timestamp < 300000) {
+          showReconnectScreen(session);
+        } else {
+          clearSession();
+        }
+      }
+    });
+
+    // Update cooldown display
+    function updateCooldown() {
+      if (!gameState || !gameState.gameState.rollCooldownUntil) {
+        clearInterval(cooldownInterval);
+        cooldownInterval = null;
+        return;
+      }
+
+      const rollButton = document.getElementById('rollButton');
+      if (!rollButton) {
+        clearInterval(cooldownInterval);
+        cooldownInterval = null;
+        return;
+      }
+      
+      const now = Date.now();
+      const timeLeft = gameState.gameState.rollCooldownUntil - now;
+
+      if (timeLeft > 0) {
+        const seconds = Math.ceil(timeLeft / 1000);
+        rollButton.textContent = `${seconds}`;
+        rollButton.disabled = true;
+      } else {
+        rollButton.textContent = '🎲 Roll Dice';
+        rollButton.disabled = false;
+        clearInterval(cooldownInterval);
+        cooldownInterval = null;
+      }
+    }
+
+    // Start cooldown timer
+    function startCooldownTimer() {
+      if (cooldownInterval) {
+        clearInterval<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bank - Dice Game</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      height: 100vh;
+      padding: 20px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .container {
+      max-width: 800px;
+      width: 100%;
+      height: 95vh;
+      max-height: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    h1 {
+      text-align: center;
+      color: #667eea;
+      margin-bottom: 30px;
+      font-size: 2.5em;
+    }
+    h1.in-game {
+      margin-bottom: 15px;
+      font-size: 2em;
+    }
+    .screen { 
+      display: none;
+    }
+    .screen.active { 
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    /* Join/Create Screen */
+    .join-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    input {
+      padding: 15px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      outline: none;
+      transition: border 0.3s;
+    }
+    input:focus { border-color: #667eea; }
+    button {
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: white;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+    .btn-success { background: #10b981; }
+    .btn-success:hover:not(:disabled) { background: #059669; }
+    .btn-danger { background: #ef4444; }
+    .btn-danger:hover:not(:disabled) { background: #dc2626; }
+    .btn-secondary { background: #6b7280; }
+    .btn-secondary:hover:not(:disabled) { background: #4b5563; }
+    .btn-dice { 
+      background: #3b82f6;
+      min-width: 60px;
+      padding: 12px 20px;
+      font-size: 1.2em;
+    }
+    .btn-dice:hover:not(:disabled) { background: #2563eb; }
+    
+    /* Waiting Room */
+    .room-code {
+      text-align: center;
+      margin: 20px 0;
+      padding: 20px;
+      background: #f3f4f6;
+      border-radius: 10px;
+    }
+    .room-code h2 { color: #667eea; font-size: 3em; letter-spacing: 5px; }
+    .player-list {
+      margin: 20px 0;
+      padding: 20px;
+      background: #f9fafb;
+      border-radius: 10px;
+    }
+    .player-item {
+      padding: 10px;
+      margin: 5px 0;
+      background: white;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: default;
+    }
+    .player-item.draggable {
+      cursor: move;
+      transition: all 0.2s;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    .player-item.draggable:hover {
+      background: #f3f4f6;
+      transform: translateX(5px);
+    }
+    .player-item.dragging {
+      opacity: 0.5;
+      background: #e0e7ff;
+    }
+    .player-item.drag-over {
+      border-top: 3px solid #667eea;
+    }
+    .player-item.touch-dragging {
+      position: fixed;
+      z-index: 1000;
+      opacity: 0.8;
+      transform: scale(1.05);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    }
+    .drag-handle {
+      color: #9ca3af;
+      margin-right: 10px;
+      font-size: 1.2em;
+    }
+    
+    .rounds-config {
+      margin: 20px 0;
+      padding: 20px;
+      background: #f3f4f6;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .rounds-config label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #667eea;
+    }
+    .rounds-config input {
+      width: 100px;
+      text-align: center;
+      font-size: 1.5em;
+    }
+    
+    /* Game Screen */
+    #gameScreen {
+      display: flex;
+      flex-direction: column;
     }
     .game-header {
       text-align: center;
@@ -652,632 +1300,4 @@
     // Start cooldown timer
     function startCooldownTimer() {
       if (cooldownInterval) {
-        clearInterval(cooldownInterval);
-      }
-      updateCooldown();
-      cooldownInterval = setInterval(updateCooldown, 100);
-    }
-
-    // Join/Create functions
-    function createRoom() {
-      const name = document.getElementById('playerName').value.trim();
-      if (!name) {
-        showError('Please enter your name');
-        return;
-      }
-      socket.emit('create_room', { playerName: name });
-    }
-
-    function joinRoom() {
-      const name = document.getElementById('playerName').value.trim();
-      const code = document.getElementById('roomCodeInput').value.trim().toUpperCase();
-      if (!name || !code) {
-        showError('Please enter your name and room code');
-        return;
-      }
-      socket.emit('join_room', { roomCode: code, playerName: name });
-    }
-
-    function setRounds() {
-      const rounds = parseInt(document.getElementById('totalRoundsInput').value);
-      socket.emit('set_rounds', { totalRounds: rounds });
-    }
-
-    function startGame() {
-      socket.emit('start_game');
-    }
-
-    function setSortMode(mode) {
-      sortMode = mode;
-      
-      // Update button states
-      document.getElementById('sortTurnBtn').classList.toggle('active', mode === 'turn');
-      document.getElementById('sortLockedBtn').classList.toggle('active', mode === 'locked');
-      document.getElementById('sortProjectedBtn').classList.toggle('active', mode === 'projected');
-      
-      // Re-render player list with new sort
-      if (gameState) {
-        updateGameScreen(gameState);
-      }
-    }
-
-    function toggleInputMode() {
-      socket.emit('toggle_dice_mode');
-    }
-
-    function updateInputMode() {
-      if (!gameState) return;
-      
-      const usePhysicalDice = gameState.gameState.usePhysicalDice;
-      const toggleBtn = document.getElementById('toggleModeBtn');
-      const hostToggleArea = document.getElementById('hostDiceToggle');
-      
-      if (!toggleBtn) return;
-      
-      // Update toggle button text
-      if (usePhysicalDice) {
-        toggleBtn.textContent = 'Use Virtual Dice';
-      } else {
-        toggleBtn.textContent = 'Use Physical Dice';
-      }
-      
-      // Show toggle for host only during active game
-      if (hostToggleArea) {
-        hostToggleArea.style.display = (isHost && gameState.gameState.status === 'playing') ? 'block' : 'none';
-      }
-    }
-
-    function renderDiceButtons() {
-      const rollCount = gameState.gameState.rollCount;
-      
-      // Determine which container to use
-      const containers = [
-        document.getElementById('diceButtons'),
-        document.getElementById('diceButtonsForOthers')
-      ];
-      
-      containers.forEach(container => {
-        if (!container) return;
-        
-        if (rollCount < 3) {
-          // First 3 rolls: 2-12 with 7 special
-          const buttons = [];
-          for (let i = 2; i <= 12; i++) {
-            const label = i === 7 ? '7 (+70)' : i.toString();
-            buttons.push(`<button class="btn-dice" onclick="submitPhysicalDice(${i}, false)">${label}</button>`);
-          }
-          container.innerHTML = buttons.join('');
-        } else {
-          // After 3 rolls: 3-11, 7 kills, doubles
-          const buttons = [];
-          
-          // 2 and 12 disabled
-          buttons.push(`<button class="btn-dice" disabled style="opacity: 0.3;">2</button>`);
-          
-          for (let i = 3; i <= 11; i++) {
-            if (i === 7) {
-              buttons.push(`<button class="btn-dice btn-danger" onclick="submitPhysicalDice(${i}, false)">7 (💀)</button>`);
-            } else {
-              buttons.push(`<button class="btn-dice" onclick="submitPhysicalDice(${i}, false)">${i}</button>`);
-            }
-          }
-          
-          buttons.push(`<button class="btn-dice" disabled style="opacity: 0.3;">12</button>`);
-          buttons.push(`<button class="btn-dice btn-success" onclick="submitPhysicalDice(0, true)" style="grid-column: span 2;">Doubles (×2)</button>`);
-          
-          container.innerHTML = buttons.join('');
-        }
-      });
-    }
-
-    // Game actions
-    function rollDice() {
-      socket.emit('roll_dice');
-    }
-
-    function submitPhysicalDice(value, isDoubles) {
-      socket.emit('submit_physical_dice', { value, isDoubles });
-    }
-
-    function bank() {
-      socket.emit('bank');
-    }
-
-    function nextTurn() {
-      socket.emit('next_turn');
-    }
-
-    function undo() {
-      socket.emit('undo');
-    }
-
-    // Socket listeners
-    socket.on('room_created', ({ roomCode, playerId }) => {
-      console.log('Room created, my ID:', playerId);
-      myId = playerId;
-      isHost = true;
-      currentRoomCode = roomCode;
-      
-      // Get player name from input
-      const playerName = document.getElementById('playerName').value.trim();
-      saveSession(roomCode, playerId, playerName);
-      
-      document.getElementById('displayRoomCode').textContent = roomCode;
-      showScreen('waitingScreen');
-    });
-
-    socket.on('reconnected', ({ playerId }) => {
-      console.log('Successfully reconnected as:', playerId);
-      myId = playerId;
-      pendingReconnect = null;
-      // Game state update will come next and show the correct screen
-    });
-
-    socket.on('game_state_update', (room) => {
-      console.log('Game state update received:', room);
-      console.log('My ID:', myId, 'Socket ID:', socket.id);
-      
-      gameState = room;
-      currentRoomCode = room.roomCode;
-      
-      // Set myId if not already set
-      if (!myId) {
-        myId = socket.id;
-      }
-      
-      // Save session when joining a room
-      const myPlayer = room.players.find(p => p.id === myId);
-      if (myPlayer) {
-        saveSession(room.roomCode, myId, myPlayer.name);
-      }
-      
-      isHost = room.hostId === myId;
-      
-      if (room.gameState.status === 'waiting') {
-        updateWaitingRoom(room);
-      } else if (room.gameState.status === 'playing') {
-        updateGameScreen(room);
-      } else if (room.gameState.status === 'finished') {
-        updateEndScreen(room);
-      }
-    });
-
-    socket.on('error', ({ message }) => {
-      showError(message);
-      
-      // If reconnection failed, show join screen
-      if (pendingReconnect) {
-        clearSession();
-        pendingReconnect = null;
-        showScreen('joinScreen');
-        showError('Unable to reconnect. Please join again.');
-      }
-    });
-
-    // UI update functions
-    function updateWaitingRoom(room) {
-      showScreen('waitingScreen');
-      
-      // Show title on waiting screen
-      document.getElementById('gameTitle').style.display = 'block';
-      
-      document.getElementById('displayRoomCode').textContent = room.roomCode;
-      document.getElementById('totalRoundsInput').value = room.gameState.totalRounds;
-      
-      const list = document.getElementById('waitingPlayerList');
-      list.innerHTML = room.players.map((p, i) => {
-        const dragHandle = isHost ? '<span class="drag-handle">☰</span>' : '';
-        
-        return `
-          <div class="player-item ${isHost ? 'draggable' : ''}" 
-               data-player-id="${p.id}"
-               draggable="${isHost ? 'true' : 'false'}">
-            <span>${dragHandle}${i + 1}. ${p.name} ${p.id === room.hostId ? '(Host)' : ''}</span>
-          </div>
-        `;
-      }).join('');
-      
-      // Add drag and drop event listeners if host
-      if (isHost) {
-        // Small delay to ensure DOM is ready
-        setTimeout(() => {
-          setupDragAndDrop();
-        }, 100);
-      }
-      
-      document.getElementById('startGameBtn').style.display = isHost ? 'block' : 'none';
-      document.getElementById('roundsConfig').style.display = isHost ? 'block' : 'none';
-    }
-
-    // Drag and drop functionality
-    let draggedElement = null;
-    let draggedPlayerId = null;
-    let touchDragElement = null;
-    let touchStartY = 0;
-    let touchCurrentY = 0;
-
-    function setupDragAndDrop() {
-      const items = document.querySelectorAll('.player-item.draggable');
-      
-      console.log('Setting up drag and drop for', items.length, 'items');
-      
-      items.forEach(item => {
-        // Remove old listeners first
-        item.removeEventListener('dragstart', handleDragStart);
-        item.removeEventListener('dragend', handleDragEnd);
-        item.removeEventListener('dragover', handleDragOver);
-        item.removeEventListener('drop', handleDrop);
-        item.removeEventListener('dragleave', handleDragLeave);
-        item.removeEventListener('dragenter', handleDragEnter);
-        
-        // Touch events for mobile
-        item.removeEventListener('touchstart', handleTouchStart);
-        item.removeEventListener('touchmove', handleTouchMove);
-        item.removeEventListener('touchend', handleTouchEnd);
-        
-        // Add desktop drag listeners
-        item.addEventListener('dragstart', handleDragStart, false);
-        item.addEventListener('dragend', handleDragEnd, false);
-        item.addEventListener('dragover', handleDragOver, false);
-        item.addEventListener('drop', handleDrop, false);
-        item.addEventListener('dragleave', handleDragLeave, false);
-        item.addEventListener('dragenter', handleDragEnter, false);
-        
-        // Add touch listeners for mobile
-        item.addEventListener('touchstart', handleTouchStart, { passive: false });
-        item.addEventListener('touchmove', handleTouchMove, { passive: false });
-        item.addEventListener('touchend', handleTouchEnd, false);
-      });
-    }
-
-    // Touch event handlers for mobile
-    function handleTouchStart(e) {
-      console.log('Touch start');
-      e.preventDefault();
-      
-      touchDragElement = this;
-      draggedPlayerId = this.getAttribute('data-player-id');
-      
-      const touch = e.touches[0];
-      touchStartY = touch.clientY;
-      
-      this.classList.add('touch-dragging');
-    }
-
-    function handleTouchMove(e) {
-      if (!touchDragElement) return;
-      e.preventDefault();
-      
-      const touch = e.touches[0];
-      touchCurrentY = touch.clientY;
-      
-      // Move the element visually
-      const deltaY = touchCurrentY - touchStartY;
-      touchDragElement.style.transform = `translateY(${deltaY}px)`;
-      
-      // Find element under touch point
-      touchDragElement.style.pointerEvents = 'none';
-      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-      touchDragElement.style.pointerEvents = '';
-      
-      // Remove all drag-over classes
-      document.querySelectorAll('.player-item').forEach(item => {
-        item.classList.remove('drag-over');
-      });
-      
-      // Add drag-over to element below
-      if (elementBelow && elementBelow.classList.contains('player-item')) {
-        elementBelow.classList.add('drag-over');
-      }
-    }
-
-    function handleTouchEnd(e) {
-      if (!touchDragElement) return;
-      console.log('Touch end');
-      e.preventDefault();
-      
-      const touch = e.changedTouches[0];
-      
-      // Find element under touch point
-      touchDragElement.style.pointerEvents = 'none';
-      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-      touchDragElement.style.pointerEvents = '';
-      
-      // Reset visual state
-      touchDragElement.classList.remove('touch-dragging');
-      touchDragElement.style.transform = '';
-      
-      // Remove all drag-over classes
-      document.querySelectorAll('.player-item').forEach(item => {
-        item.classList.remove('drag-over');
-      });
-      
-      // Handle drop
-      if (elementBelow && elementBelow.classList.contains('player-item') && elementBelow !== touchDragElement) {
-        const droppedOnPlayerId = elementBelow.getAttribute('data-player-id');
-        
-        console.log('Touch reordering:', draggedPlayerId, 'to position of', droppedOnPlayerId);
-        
-        socket.emit('reorder_players', {
-          draggedPlayerId: draggedPlayerId,
-          droppedOnPlayerId: droppedOnPlayerId
-        });
-      }
-      
-      touchDragElement = null;
-      draggedPlayerId = null;
-    }
-
-    // Desktop drag handlers
-    function handleDragStart(e) {
-      console.log('Drag started');
-      draggedElement = this;
-      draggedPlayerId = this.getAttribute('data-player-id');
-      this.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', draggedPlayerId);
-    }
-
-    function handleDragEnd(e) {
-      console.log('Drag ended');
-      this.classList.remove('dragging');
-      
-      // Remove all drag-over classes
-      document.querySelectorAll('.player-item').forEach(item => {
-        item.classList.remove('drag-over');
-      });
-      
-      draggedElement = null;
-      draggedPlayerId = null;
-    }
-
-    function handleDragOver(e) {
-      if (e.preventDefault) {
-        e.preventDefault();
-      }
-      
-      e.dataTransfer.dropEffect = 'move';
-      return false;
-    }
-
-    function handleDragEnter(e) {
-      if (this !== draggedElement) {
-        this.classList.add('drag-over');
-      }
-    }
-
-    function handleDragLeave(e) {
-      // Only remove if we're actually leaving this element
-      if (e.target === this) {
-        this.classList.remove('drag-over');
-      }
-    }
-
-    function handleDrop(e) {
-      console.log('Dropped');
-      if (e.stopPropagation) {
-        e.stopPropagation();
-      }
-      if (e.preventDefault) {
-        e.preventDefault();
-      }
-      
-      this.classList.remove('drag-over');
-      
-      if (draggedElement !== this) {
-        const droppedOnPlayerId = this.getAttribute('data-player-id');
-        
-        console.log('Reordering:', draggedPlayerId, 'to position of', droppedOnPlayerId);
-        
-        // Send reorder request to server
-        socket.emit('reorder_players', {
-          draggedPlayerId: draggedPlayerId,
-          droppedOnPlayerId: droppedOnPlayerId
-        });
-      }
-      
-      return false;
-    }
-
-    function updateGameScreen(room) {
-      showScreen('gameScreen');
-      
-      // Hide title during game
-      document.getElementById('gameTitle').style.display = 'none';
-      
-      // Clear existing cooldown timer
-      if (cooldownInterval) {
-        clearInterval(cooldownInterval);
-        cooldownInterval = null;
-      }
-      
-      document.getElementById('currentRound').textContent = room.gameState.currentRound;
-      document.getElementById('totalRounds').textContent = room.gameState.totalRounds;
-      document.getElementById('sharedScore').textContent = room.gameState.sharedRoundScore;
-      document.getElementById('rollCount').textContent = room.gameState.rollCount;
-      
-      // Display last roll
-      if (room.gameState.lastRoll) {
-        const lastRollEl = document.getElementById('lastRollDisplay');
-        lastRollEl.style.display = 'flex';
-        
-        if (room.gameState.lastRoll.die1 !== null) {
-          document.getElementById('die1Display').textContent = room.gameState.lastRoll.die1;
-          document.getElementById('die2Display').textContent = room.gameState.lastRoll.die2;
-        } else {
-          document.getElementById('die1Display').textContent = '?';
-          document.getElementById('die2Display').textContent = '?';
-        }
-        document.getElementById('diceTotal').textContent = room.gameState.lastRoll.total;
-      } else {
-        document.getElementById('lastRollDisplay').style.display = 'none';
-      }
-      
-      const currentPlayer = room.players[room.gameState.currentTurnIndex];
-      
-      // Sort players based on current sort mode
-      let sortedPlayers = [...room.players];
-      if (sortMode === 'locked') {
-        sortedPlayers.sort((a, b) => b.lockedScore - a.lockedScore);
-      } else if (sortMode === 'projected') {
-        sortedPlayers.sort((a, b) => {
-          const aProj = a.bankedThisRound ? a.lockedScore : a.lockedScore + room.gameState.sharedRoundScore;
-          const bProj = b.bankedThisRound ? b.lockedScore : b.lockedScore + room.gameState.sharedRoundScore;
-          return bProj - aProj;
-        });
-      }
-      // else sortMode === 'turn', keep original order
-      
-      // Player cards
-      const cardsHtml = sortedPlayers.map((p, index) => {
-        const isCurrent = p.id === currentPlayer.id;
-        const projectedScore = p.bankedThisRound ? p.lockedScore : p.lockedScore + room.gameState.sharedRoundScore;
-        const isDisconnected = p.disconnected;
-        
-        return `
-          <div class="player-card ${isCurrent ? 'active' : ''} ${p.bankedThisRound ? 'banked' : ''}">
-            <div>
-              <div class="player-name">${sortMode === 'turn' ? '' : (index + 1) + '. '}${p.name}${isDisconnected ? ' (Disconnected)' : ''}</div>
-              <div class="player-scores">
-                Locked: ${p.lockedScore} | Projected: ${projectedScore}
-              </div>
-            </div>
-            <div class="player-status">
-              ${p.bankedThisRound ? '<span class="badge badge-success">BANKED</span>' : ''}
-              ${isCurrent ? '<span class="badge badge-info">TURN</span>' : ''}
-              ${isDisconnected ? '<span class="badge" style="background: #ef4444; color: white;">OFFLINE</span>' : ''}
-            </div>
-          </div>
-        `;
-      }).join('');
-      document.getElementById('playerCards').innerHTML = cardsHtml;
-      
-      // Update host toggle button visibility and state
-      updateInputMode();
-      
-      // Action area
-      const isMyTurn = currentPlayer.id === myId;
-      const myPlayer = room.players.find(p => p.id === myId);
-      const usePhysicalDice = room.gameState.usePhysicalDice;
-      
-      // Can't roll if you've already banked OR if round is not active
-      const canRoll = isMyTurn && room.gameState.roundActive && !myPlayer.bankedThisRound;
-      
-      // Can bank if: not banked yet, at least 3 rolls done, round is still active
-      const canBank = myPlayer && !myPlayer.bankedThisRound && 
-                      room.gameState.rollCount >= 3 && 
-                      room.gameState.roundActive;
-      
-      // Show/hide roll button area and bank area
-      document.getElementById('rollButtonArea').style.display = canRoll ? 'block' : 'none';
-      document.getElementById('bankArea').style.display = canBank ? 'block' : 'none';
-      
-      // Update input mode for player's turn
-      if (canRoll) {
-        const virtualArea = document.getElementById('virtualDiceArea');
-        const physicalArea = document.getElementById('physicalDiceArea');
-        const physicalHost = document.getElementById('physicalDiceHost');
-        const physicalPlayer = document.getElementById('physicalDicePlayer');
-        
-        if (usePhysicalDice) {
-          virtualArea.style.display = 'none';
-          physicalArea.style.display = 'block';
-          
-          if (isHost) {
-            physicalHost.style.display = 'block';
-            physicalPlayer.style.display = 'none';
-            renderDiceButtons();
-          } else {
-            physicalHost.style.display = 'none';
-            physicalPlayer.style.display = 'block';
-          }
-        } else {
-          virtualArea.style.display = 'block';
-          physicalArea.style.display = 'none';
-        }
-        
-        // Start cooldown timer if there's a cooldown active
-        if (room.gameState.rollCooldownUntil && Date.now() < room.gameState.rollCooldownUntil) {
-          startCooldownTimer();
-        }
-      }
-      
-      // Host physical dice input area (when it's NOT their turn but physical mode is on)
-      const hostPhysicalInputArea = document.getElementById('hostPhysicalInputArea');
-      if (hostPhysicalInputArea) {
-        const showHostInput = isHost && !isMyTurn && usePhysicalDice && room.gameState.roundActive;
-        hostPhysicalInputArea.style.display = showHostInput ? 'block' : 'none';
-        
-        if (showHostInput) {
-          document.getElementById('currentPlayerForHost').textContent = currentPlayer.name;
-          renderDiceButtons();
-        }
-      }
-      
-      // Determine what waiting message to show
-      const shouldWait = !canRoll && !(isHost && usePhysicalDice && room.gameState.roundActive);
-      document.getElementById('waitingArea').style.display = shouldWait ? 'block' : 'none';
-      
-      // Update waiting message based on state
-      if (myPlayer.bankedThisRound) {
-        // Player has banked - waiting for others
-        document.getElementById('waitingArea').innerHTML = '<p style="color: #10b981; font-weight: bold;">You\'ve banked! Waiting for others...</p>';
-      } else if (!room.gameState.roundActive) {
-        // Round is over - waiting for next round
-        document.getElementById('waitingArea').innerHTML = '<p style="color: #f59e0b; font-weight: bold;">Round Over - Waiting for next round...</p>';
-      } else if (!isMyTurn && !(isHost && usePhysicalDice)) {
-        // Not your turn - waiting for current player (unless host in physical mode)
-        document.getElementById('waitingArea').innerHTML = `<p style="color: #6b7280;">Waiting for ${currentPlayer.name}...</p>`;
-      }
-      
-      // Host controls
-      if (isHost) {
-        document.getElementById('hostControls').style.display = 'flex';
-        
-        // Show appropriate button based on round state
-        if (!room.gameState.roundActive) {
-          // Round is over - show "Start Next Round" button
-          document.getElementById('nextTurnBtn').style.display = 'none';
-          document.getElementById('nextRoundBtn').style.display = 'block';
-        } else {
-          // Round is active - show "Next Turn" button
-          document.getElementById('nextTurnBtn').style.display = 'block';
-          document.getElementById('nextRoundBtn').style.display = 'none';
-        }
-      } else {
-        document.getElementById('hostControls').style.display = 'none';
-      }
-    }
-
-    function updateEndScreen(room) {
-      showScreen('endScreen');
-      
-      // Show title on end screen
-      document.getElementById('gameTitle').style.display = 'block';
-      
-      const sorted = [...room.players].sort((a, b) => b.lockedScore - a.lockedScore);
-      document.getElementById('winnerName').textContent = sorted[0].name + ' Wins!';
-      
-      const scoresHtml = sorted.map((p, i) => `
-        <div class="score-item">
-          <span>${i + 1}. ${p.name}</span>
-          <span>${p.lockedScore} points</span>
-        </div>
-      `).join('');
-      document.getElementById('finalScores').innerHTML = scoresHtml;
-    }
-
-    function showScreen(screenId) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById(screenId).classList.add('active');
-    }
-
-    function showError(msg) {
-      const errorEl = document.getElementById('errorMsg');
-      errorEl.textContent = msg;
-      errorEl.style.display = 'block';
-      setTimeout(() => errorEl.style.display = 'none', 3000);
-    }
-  </script>
-</body>
-</html>
+        clearInterval
