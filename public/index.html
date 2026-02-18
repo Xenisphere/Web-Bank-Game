@@ -69,11 +69,18 @@
     }
     
     /* Join/Create Screen */
+    #joinScreen {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
     .join-controls {
       display: flex;
       flex-direction: column;
       gap: 15px;
       max-width: 400px;
+      width: 100%;
       margin: 0 auto;
     }
     input {
@@ -94,6 +101,9 @@
       cursor: pointer;
       transition: all 0.3s;
       color: white;
+      pointer-events: auto;
+      position: relative;
+      z-index: 1;
     }
     button:disabled {
       opacity: 0.4;
@@ -657,4 +667,662 @@
         rollButton.textContent = '🎲 Roll Dice';
         rollButton.disabled = false;
         clearInterval(cooldownInterval);
-        cooldownIn
+        cooldownInterval = null;
+      }
+    }
+
+    // Start cooldown timer
+    function startCooldownTimer() {
+      if (cooldownInterval) {
+        clearInterval(cooldownInterval);
+      }
+      updateCooldown();
+      cooldownInterval = setInterval(updateCooldown, 100);
+    }
+
+    // Join/Create functions
+    function createRoom() {
+      const name = document.getElementById('playerName').value.trim();
+      if (!name) {
+        showError('Please enter your name');
+        return;
+      }
+      socket.emit('create_room', { playerName: name });
+    }
+
+    function joinRoom() {
+      const name = document.getElementById('playerName').value.trim();
+      const code = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+      if (!name || !code) {
+        showError('Please enter your name and room code');
+        return;
+      }
+      socket.emit('join_room', { roomCode: code, playerName: name });
+    }
+
+    function setRounds() {
+      const rounds = parseInt(document.getElementById('totalRoundsInput').value);
+      socket.emit('set_rounds', { totalRounds: rounds });
+    }
+
+    function startGame() {
+      socket.emit('start_game');
+    }
+
+    function setSortMode(mode) {
+      sortMode = mode;
+      
+      // Update button states
+      document.getElementById('sortTurnBtn').classList.toggle('active', mode === 'turn');
+      document.getElementById('sortLockedBtn').classList.toggle('active', mode === 'locked');
+      document.getElementById('sortProjectedBtn').classList.toggle('active', mode === 'projected');
+      
+      // Re-render player list with new sort
+      if (gameState) {
+        updateGameScreen(gameState);
+      }
+    }
+
+    function toggleInputMode() {
+      socket.emit('toggle_dice_mode');
+    }
+
+    function updateInputMode() {
+      if (!gameState) return;
+      
+      const usePhysicalDice = gameState.gameState.usePhysicalDice;
+      const toggleBtn = document.getElementById('toggleModeBtn');
+      
+      if (!toggleBtn) return;
+      
+      // Update toggle button text
+      if (usePhysicalDice) {
+        toggleBtn.textContent = 'Use Virtual Dice';
+      } else {
+        toggleBtn.textContent = 'Use Physical Dice';
+      }
+      
+      // Show toggle for host only during active game
+      if (isHost && gameState.gameState.status === 'playing') {
+        toggleBtn.style.display = 'block';
+      } else {
+        toggleBtn.style.display = 'none';
+      }
+    }
+
+    function renderDiceButtons() {
+      const rollCount = gameState.gameState.rollCount;
+      
+      // Determine which container to use
+      const containers = [
+        document.getElementById('diceButtons'),
+        document.getElementById('diceButtonsForOthers')
+      ];
+      
+      containers.forEach(container => {
+        if (!container) return;
+        
+        if (rollCount < 3) {
+          // First 3 rolls: 2-12 with 7 special
+          const buttons = [];
+          for (let i = 2; i <= 12; i++) {
+            const label = i === 7 ? '7 (+70)' : i.toString();
+            buttons.push(`<button class="btn-dice" onclick="submitPhysicalDice(${i}, false)">${label}</button>`);
+          }
+          container.innerHTML = buttons.join('');
+        } else {
+          // After 3 rolls: 3-11, 7 kills, doubles
+          const buttons = [];
+          
+          // 2 and 12 disabled
+          buttons.push(`<button class="btn-dice" disabled style="opacity: 0.3;">2</button>`);
+          
+          for (let i = 3; i <= 11; i++) {
+            if (i === 7) {
+              buttons.push(`<button class="btn-dice btn-danger" onclick="submitPhysicalDice(${i}, false)">7 (💀)</button>`);
+            } else {
+              buttons.push(`<button class="btn-dice" onclick="submitPhysicalDice(${i}, false)">${i}</button>`);
+            }
+          }
+          
+          buttons.push(`<button class="btn-dice" disabled style="opacity: 0.3;">12</button>`);
+          buttons.push(`<button class="btn-dice btn-success" onclick="submitPhysicalDice(0, true)" style="grid-column: span 2;">Doubles (×2)</button>`);
+          
+          container.innerHTML = buttons.join('');
+        }
+      });
+    }
+
+    // Game actions
+    function rollDice() {
+      socket.emit('roll_dice');
+    }
+
+    function submitPhysicalDice(value, isDoubles) {
+      socket.emit('submit_physical_dice', { value, isDoubles });
+    }
+
+    function bank() {
+      socket.emit('bank');
+    }
+
+    function nextTurn() {
+      socket.emit('next_turn');
+    }
+
+    function undo() {
+      socket.emit('undo');
+    }
+
+    // Socket listeners
+    socket.on('room_created', ({ roomCode, playerId }) => {
+      console.log('Room created, my ID:', playerId);
+      myId = playerId;
+      isHost = true;
+      currentRoomCode = roomCode;
+      
+      // Get player name from input
+      const playerName = document.getElementById('playerName').value.trim();
+      saveSession(roomCode, playerId, playerName);
+      
+      document.getElementById('displayRoomCode').textContent = roomCode;
+      showScreen('waitingScreen');
+    });
+
+    socket.on('reconnected', ({ playerId }) => {
+      console.log('Successfully reconnected as:', playerId);
+      myId = playerId;
+      pendingReconnect = null;
+      // Game state update will come next and show the correct screen
+    });
+
+    socket.on('game_state_update', (room) => {
+      console.log('Game state update received:', room);
+      console.log('My ID:', myId, 'Socket ID:', socket.id);
+      
+      gameState = room;
+      currentRoomCode = room.roomCode;
+      
+      // Set myId if not already set
+      if (!myId) {
+        myId = socket.id;
+      }
+      
+      // Save session when joining a room
+      const myPlayer = room.players.find(p => p.id === myId);
+      if (myPlayer) {
+        saveSession(room.roomCode, myId, myPlayer.name);
+      }
+      
+      isHost = room.hostId === myId;
+      
+      if (room.gameState.status === 'waiting') {
+        updateWaitingRoom(room);
+      } else if (room.gameState.status === 'playing') {
+        updateGameScreen(room);
+      } else if (room.gameState.status === 'finished') {
+        updateEndScreen(room);
+      }
+    });
+
+    socket.on('error', ({ message }) => {
+      showError(message);
+      
+      // If reconnection failed, show join screen
+      if (pendingReconnect) {
+        clearSession();
+        pendingReconnect = null;
+        showScreen('joinScreen');
+        showError('Unable to reconnect. Please join again.');
+      }
+    });
+
+    // UI update functions
+    function updateWaitingRoom(room) {
+      showScreen('waitingScreen');
+      
+      // Show title on waiting screen
+      document.getElementById('gameTitle').style.display = 'block';
+      
+      document.getElementById('displayRoomCode').textContent = room.roomCode;
+      document.getElementById('totalRoundsInput').value = room.gameState.totalRounds;
+      
+      const list = document.getElementById('waitingPlayerList');
+      list.innerHTML = room.players.map((p, i) => {
+        const dragHandle = isHost ? '<span class="drag-handle">☰</span>' : '';
+        
+        return `
+          <div class="player-item ${isHost ? 'draggable' : ''}" 
+               data-player-id="${p.id}"
+               draggable="${isHost ? 'true' : 'false'}">
+            <span>${dragHandle}${i + 1}. ${p.name} ${p.id === room.hostId ? '(Host)' : ''}</span>
+          </div>
+        `;
+      }).join('');
+      
+      // Add drag and drop event listeners if host
+      if (isHost) {
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          setupDragAndDrop();
+        }, 100);
+      }
+      
+      document.getElementById('startGameBtn').style.display = isHost ? 'block' : 'none';
+      document.getElementById('roundsConfig').style.display = isHost ? 'block' : 'none';
+    }
+
+    // Drag and drop functionality
+    let draggedElement = null;
+    let draggedPlayerId = null;
+    let touchDragElement = null;
+    let touchStartY = 0;
+    let touchCurrentY = 0;
+
+    function setupDragAndDrop() {
+      const items = document.querySelectorAll('.player-item.draggable');
+      
+      console.log('Setting up drag and drop for', items.length, 'items');
+      
+      items.forEach(item => {
+        // Remove old listeners first
+        item.removeEventListener('dragstart', handleDragStart);
+        item.removeEventListener('dragend', handleDragEnd);
+        item.removeEventListener('dragover', handleDragOver);
+        item.removeEventListener('drop', handleDrop);
+        item.removeEventListener('dragleave', handleDragLeave);
+        item.removeEventListener('dragenter', handleDragEnter);
+        
+        // Touch events for mobile
+        item.removeEventListener('touchstart', handleTouchStart);
+        item.removeEventListener('touchmove', handleTouchMove);
+        item.removeEventListener('touchend', handleTouchEnd);
+        
+        // Add desktop drag listeners
+        item.addEventListener('dragstart', handleDragStart, false);
+        item.addEventListener('dragend', handleDragEnd, false);
+        item.addEventListener('dragover', handleDragOver, false);
+        item.addEventListener('drop', handleDrop, false);
+        item.addEventListener('dragleave', handleDragLeave, false);
+        item.addEventListener('dragenter', handleDragEnter, false);
+        
+        // Add touch listeners for mobile
+        item.addEventListener('touchstart', handleTouchStart, { passive: false });
+        item.addEventListener('touchmove', handleTouchMove, { passive: false });
+        item.addEventListener('touchend', handleTouchEnd, false);
+      });
+    }
+
+    // Touch event handlers for mobile
+    function handleTouchStart(e) {
+      console.log('Touch start');
+      e.preventDefault();
+      
+      touchDragElement = this;
+      draggedPlayerId = this.getAttribute('data-player-id');
+      
+      const touch = e.touches[0];
+      touchStartY = touch.clientY;
+      
+      this.classList.add('touch-dragging');
+    }
+
+    function handleTouchMove(e) {
+      if (!touchDragElement) return;
+      e.preventDefault();
+      
+      const touch = e.touches[0];
+      touchCurrentY = touch.clientY;
+      
+      // Move the element visually
+      const deltaY = touchCurrentY - touchStartY;
+      touchDragElement.style.transform = `translateY(${deltaY}px)`;
+      
+      // Find element under touch point
+      touchDragElement.style.pointerEvents = 'none';
+      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+      touchDragElement.style.pointerEvents = '';
+      
+      // Remove all drag-over classes
+      document.querySelectorAll('.player-item').forEach(item => {
+        item.classList.remove('drag-over');
+      });
+      
+      // Add drag-over to element below
+      if (elementBelow && elementBelow.classList.contains('player-item')) {
+        elementBelow.classList.add('drag-over');
+      }
+    }
+
+    function handleTouchEnd(e) {
+      if (!touchDragElement) return;
+      console.log('Touch end');
+      e.preventDefault();
+      
+      const touch = e.changedTouches[0];
+      
+      // Find element under touch point
+      touchDragElement.style.pointerEvents = 'none';
+      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+      touchDragElement.style.pointerEvents = '';
+      
+      // Reset visual state
+      touchDragElement.classList.remove('touch-dragging');
+      touchDragElement.style.transform = '';
+      
+      // Remove all drag-over classes
+      document.querySelectorAll('.player-item').forEach(item => {
+        item.classList.remove('drag-over');
+      });
+      
+      // Handle drop
+      if (elementBelow && elementBelow.classList.contains('player-item') && elementBelow !== touchDragElement) {
+        const droppedOnPlayerId = elementBelow.getAttribute('data-player-id');
+        
+        console.log('Touch reordering:', draggedPlayerId, 'to position of', droppedOnPlayerId);
+        
+        socket.emit('reorder_players', {
+          draggedPlayerId: draggedPlayerId,
+          droppedOnPlayerId: droppedOnPlayerId
+        });
+      }
+      
+      touchDragElement = null;
+      draggedPlayerId = null;
+    }
+
+    // Desktop drag handlers
+    function handleDragStart(e) {
+      console.log('Drag started');
+      draggedElement = this;
+      draggedPlayerId = this.getAttribute('data-player-id');
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedPlayerId);
+    }
+
+    function handleDragEnd(e) {
+      console.log('Drag ended');
+      this.classList.remove('dragging');
+      
+      // Remove all drag-over classes
+      document.querySelectorAll('.player-item').forEach(item => {
+        item.classList.remove('drag-over');
+      });
+      
+      draggedElement = null;
+      draggedPlayerId = null;
+    }
+
+    function handleDragOver(e) {
+      if (e.preventDefault) {
+        e.preventDefault();
+      }
+      
+      e.dataTransfer.dropEffect = 'move';
+      return false;
+    }
+
+    function handleDragEnter(e) {
+      if (this !== draggedElement) {
+        this.classList.add('drag-over');
+      }
+    }
+
+    function handleDragLeave(e) {
+      // Only remove if we're actually leaving this element
+      if (e.target === this) {
+        this.classList.remove('drag-over');
+      }
+    }
+
+    function handleDrop(e) {
+      console.log('Dropped');
+      if (e.stopPropagation) {
+        e.stopPropagation();
+      }
+      if (e.preventDefault) {
+        e.preventDefault();
+      }
+      
+      this.classList.remove('drag-over');
+      
+      if (draggedElement !== this) {
+        const droppedOnPlayerId = this.getAttribute('data-player-id');
+        
+        console.log('Reordering:', draggedPlayerId, 'to position of', droppedOnPlayerId);
+        
+        // Send reorder request to server
+        socket.emit('reorder_players', {
+          draggedPlayerId: draggedPlayerId,
+          droppedOnPlayerId: droppedOnPlayerId
+        });
+      }
+      
+      return false;
+    }
+
+    function updateGameScreen(room) {
+      showScreen('gameScreen');
+      
+      // Hide title during game
+      document.getElementById('gameTitle').style.display = 'none';
+      
+      // Clear existing cooldown timer
+      if (cooldownInterval) {
+        clearInterval(cooldownInterval);
+        cooldownInterval = null;
+      }
+      
+      document.getElementById('currentRound').textContent = room.gameState.currentRound;
+      document.getElementById('totalRounds').textContent = room.gameState.totalRounds;
+      document.getElementById('sharedScore').textContent = room.gameState.sharedRoundScore;
+      document.getElementById('rollCount').textContent = room.gameState.rollCount;
+      
+      // Display last roll
+      if (room.gameState.lastRoll) {
+        const lastRollEl = document.getElementById('lastRollDisplay');
+        lastRollEl.style.display = 'flex';
+        
+        if (room.gameState.lastRoll.die1 !== null) {
+          document.getElementById('die1Display').textContent = room.gameState.lastRoll.die1;
+          document.getElementById('die2Display').textContent = room.gameState.lastRoll.die2;
+        } else {
+          document.getElementById('die1Display').textContent = '?';
+          document.getElementById('die2Display').textContent = '?';
+        }
+        document.getElementById('diceTotal').textContent = room.gameState.lastRoll.total;
+      } else {
+        document.getElementById('lastRollDisplay').style.display = 'none';
+      }
+      
+      const currentPlayer = room.players[room.gameState.currentTurnIndex];
+      
+      // Sort players based on current sort mode
+      let sortedPlayers = [...room.players];
+      if (sortMode === 'locked') {
+        sortedPlayers.sort((a, b) => b.lockedScore - a.lockedScore);
+      } else if (sortMode === 'projected') {
+        sortedPlayers.sort((a, b) => {
+          const aProj = a.bankedThisRound ? a.lockedScore : a.lockedScore + room.gameState.sharedRoundScore;
+          const bProj = b.bankedThisRound ? b.lockedScore : b.lockedScore + room.gameState.sharedRoundScore;
+          return bProj - aProj;
+        });
+      }
+      // else sortMode === 'turn', keep original order
+      
+      // Player cards
+      const cardsHtml = sortedPlayers.map((p, index) => {
+        const isCurrent = p.id === currentPlayer.id;
+        const projectedScore = p.bankedThisRound ? p.lockedScore : p.lockedScore + room.gameState.sharedRoundScore;
+        const isDisconnected = p.disconnected;
+        
+        return `
+          <div class="player-card ${isCurrent ? 'active' : ''} ${p.bankedThisRound ? 'banked' : ''}">
+            <div>
+              <div class="player-name">${sortMode === 'turn' ? '' : (index + 1) + '. '}${p.name}${isDisconnected ? ' (Disconnected)' : ''}</div>
+              <div class="player-scores">
+                Locked: ${p.lockedScore} | Projected: ${projectedScore}
+              </div>
+            </div>
+            <div class="player-status">
+              ${p.bankedThisRound ? '<span class="badge badge-success">BANKED</span>' : ''}
+              ${isCurrent ? '<span class="badge badge-info">TURN</span>' : ''}
+              ${isDisconnected ? '<span class="badge" style="background: #ef4444; color: white;">OFFLINE</span>' : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('playerCards').innerHTML = cardsHtml;
+      
+      // Update host toggle button visibility and state
+      updateInputMode();
+      
+      // Action area
+      const isMyTurn = currentPlayer.id === myId;
+      const myPlayer = room.players.find(p => p.id === myId);
+      const usePhysicalDice = room.gameState.usePhysicalDice;
+      
+      // Can't roll if you've already banked OR if round is not active
+      const canRoll = isMyTurn && room.gameState.roundActive && !myPlayer.bankedThisRound;
+      
+      // Can bank if: not banked yet, at least 3 rolls done, round is still active
+      const canBank = myPlayer && !myPlayer.bankedThisRound && 
+                      room.gameState.rollCount >= 3 && 
+                      room.gameState.roundActive;
+      
+      // Show/hide roll button area and bank area
+      document.getElementById('rollButtonArea').style.display = canRoll ? 'block' : 'none';
+      document.getElementById('bankArea').style.display = canBank ? 'block' : 'none';
+      
+      // Always update virtual/physical dice visibility based on mode
+      const virtualArea = document.getElementById('virtualDiceArea');
+      const physicalArea = document.getElementById('physicalDiceArea');
+      const physicalHost = document.getElementById('physicalDiceHost');
+      const physicalPlayer = document.getElementById('physicalDicePlayer');
+      
+      if (usePhysicalDice) {
+        virtualArea.style.display = 'none';
+        physicalArea.style.display = 'block';
+        
+        if (isHost) {
+          physicalHost.style.display = 'block';
+          physicalPlayer.style.display = 'none';
+          if (canRoll) {
+            renderDiceButtons();
+          }
+        } else {
+          physicalHost.style.display = 'none';
+          physicalPlayer.style.display = 'block';
+        }
+      } else {
+        virtualArea.style.display = 'block';
+        physicalArea.style.display = 'none';
+      }
+      
+      // Update input mode for player's turn
+      if (canRoll) {
+        // Start cooldown timer if there's a cooldown active
+        if (room.gameState.rollCooldownUntil && Date.now() < room.gameState.rollCooldownUntil) {
+          startCooldownTimer();
+        }
+      }
+      
+      // Host physical dice input area
+      const hostPhysicalInputArea = document.getElementById('hostPhysicalInputArea');
+      if (hostPhysicalInputArea) {
+        const showHostInput = isHost && !isMyTurn && usePhysicalDice && room.gameState.roundActive;
+        
+        if (showHostInput) {
+          // Show in action area during first 3 rolls, hide during later rolls
+          if (room.gameState.rollCount < 3) {
+            hostPhysicalInputArea.style.display = 'block';
+          } else {
+            hostPhysicalInputArea.style.display = 'none';
+          }
+          
+          document.getElementById('currentPlayerForHost').textContent = currentPlayer.name;
+          renderDiceButtons();
+        } else {
+          hostPhysicalInputArea.style.display = 'none';
+        }
+      }
+      
+      // Determine what waiting message to show
+      const shouldWait = !canRoll && !(isHost && usePhysicalDice && room.gameState.roundActive);
+      document.getElementById('waitingArea').style.display = shouldWait ? 'block' : 'none';
+      
+      // Update waiting message based on state
+      if (myPlayer.bankedThisRound) {
+        // Player has banked - waiting for others
+        document.getElementById('waitingArea').innerHTML = '<p style="color: #10b981; font-weight: bold;">You\'ve banked! Waiting for others...</p>';
+      } else if (!room.gameState.roundActive) {
+        // Round is over - waiting for next round
+        document.getElementById('waitingArea').innerHTML = '<p style="color: #f59e0b; font-weight: bold;">Round Over - Waiting for next round...</p>';
+      } else if (!isMyTurn && !(isHost && usePhysicalDice)) {
+        // Not your turn - waiting for current player (unless host in physical mode)
+        document.getElementById('waitingArea').innerHTML = `<p style="color: #6b7280;">Waiting for ${currentPlayer.name}...</p>`;
+      }
+      
+      // Host controls
+      if (isHost) {
+        document.getElementById('hostControls').style.display = 'flex';
+        
+        // Hide host controls when physical dice mode and not host's turn
+        if (usePhysicalDice && !isMyTurn) {
+          document.getElementById('toggleModeBtn').style.display = 'none';
+          document.getElementById('nextTurnBtn').style.display = 'none';
+          document.getElementById('nextRoundBtn').style.display = 'none';
+          document.querySelector('#hostControls .btn-danger').style.display = 'none'; // Undo button
+        } else {
+          document.getElementById('toggleModeBtn').style.display = 'block';
+          document.querySelector('#hostControls .btn-danger').style.display = 'block'; // Undo button
+          
+          // Show appropriate button based on round state
+          if (!room.gameState.roundActive) {
+            // Round is over - show "Start Next Round" button
+            document.getElementById('nextTurnBtn').style.display = 'none';
+            document.getElementById('nextRoundBtn').style.display = 'block';
+          } else {
+            // Round is active - show "Next Turn" button
+            document.getElementById('nextTurnBtn').style.display = 'block';
+            document.getElementById('nextRoundBtn').style.display = 'none';
+          }
+        }
+      } else {
+        document.getElementById('hostControls').style.display = 'none';
+      }
+    }
+
+    function updateEndScreen(room) {
+      showScreen('endScreen');
+      
+      // Show title on end screen
+      document.getElementById('gameTitle').style.display = 'block';
+      
+      const sorted = [...room.players].sort((a, b) => b.lockedScore - a.lockedScore);
+      document.getElementById('winnerName').textContent = sorted[0].name + ' Wins!';
+      
+      const scoresHtml = sorted.map((p, i) => `
+        <div class="score-item">
+          <span>${i + 1}. ${p.name}</span>
+          <span>${p.lockedScore} points</span>
+        </div>
+      `).join('');
+      document.getElementById('finalScores').innerHTML = scoresHtml;
+    }
+
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    function showError(msg) {
+      const errorEl = document.getElementById('errorMsg');
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+      setTimeout(() => errorEl.style.display = 'none', 3000);
+    }
+  </script>
+</body>
+</html>
