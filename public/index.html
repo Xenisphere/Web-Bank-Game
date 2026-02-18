@@ -75,6 +75,38 @@
       justify-content: center;
       align-items: center;
     }
+    #joinScreen:not(.active) {
+      display: none !important;
+    }
+    
+    /* Waiting Screen */
+    #waitingScreen {
+      display: flex;
+      flex-direction: column;
+    }
+    #waitingScreen:not(.active) {
+      display: none !important;
+    }
+    
+    /* Reconnect Screen */
+    #reconnectScreen {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    #reconnectScreen:not(.active) {
+      display: none !important;
+    }
+    
+    /* End Screen */
+    #endScreen {
+      display: flex;
+      flex-direction: column;
+    }
+    #endScreen:not(.active) {
+      display: none !important;
+    }
+    
     .join-controls {
       display: flex;
       flex-direction: column;
