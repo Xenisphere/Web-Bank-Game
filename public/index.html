@@ -547,6 +547,17 @@
         </div>
       </div>
       
+      <!-- Host physical dice input area (shown when it's NOT host's turn but physical dice enabled) -->
+      <div id="hostPhysicalInputArea" style="display: none; flex-shrink: 0;">
+        <div style="padding: 15px; background: white; border-radius: 8px; border: 2px solid #667eea; margin-bottom: 10px;">
+          <p style="font-size: 1.1em; color: #667eea; margin-bottom: 8px; font-weight: bold;">
+            <span id="currentPlayerForHost"></span>'s Turn
+          </p>
+          <p style="color: #6b7280; margin-bottom: 10px; font-size: 0.9em;">Enter their dice roll:</p>
+          <div class="dice-buttons" id="diceButtonsForOthers"></div>
+        </div>
+      </div>
+      
       <div class="sort-controls">
         <button class="sort-btn active" onclick="setSortMode('turn')" id="sortTurnBtn">Turn Order</button>
         <button class="sort-btn" onclick="setSortMode('locked')" id="sortLockedBtn">By Locked Score</button>
@@ -558,17 +569,6 @@
       </div>
       
       <div class="action-area">
-        <!-- Host physical dice input area (shown when it's NOT host's turn but physical dice enabled) -->
-        <div id="hostPhysicalInputArea" style="display: none;">
-          <div style="padding: 15px; background: white; border-radius: 8px; border: 2px solid #667eea; margin-bottom: 10px;">
-            <p style="font-size: 1.1em; color: #667eea; margin-bottom: 8px; font-weight: bold;">
-              <span id="currentPlayerForHost"></span>'s Turn
-            </p>
-            <p style="color: #6b7280; margin-bottom: 10px; font-size: 0.9em;">Enter their dice roll:</p>
-            <div class="dice-buttons" id="diceButtonsForOthers"></div>
-          </div>
-        </div>
-        
         <div id="bankArea" style="display: none;">
           <button class="btn-success" onclick="bank()">🏦 Bank Now</button>
         </div>
@@ -1266,13 +1266,7 @@
         const showHostInput = isHost && !isMyTurn && usePhysicalDice && room.gameState.roundActive;
         
         if (showHostInput) {
-          // Show in action area during first 3 rolls, hide during later rolls
-          if (room.gameState.rollCount < 3) {
-            hostPhysicalInputArea.style.display = 'block';
-          } else {
-            hostPhysicalInputArea.style.display = 'none';
-          }
-          
+          hostPhysicalInputArea.style.display = 'block';
           document.getElementById('currentPlayerForHost').textContent = currentPlayer.name;
           renderDiceButtons();
         } else {
@@ -1298,15 +1292,11 @@
       
       // Host controls
       if (isHost) {
-        document.getElementById('hostControls').style.display = 'flex';
-        
-        // Hide host controls when physical dice mode and not host's turn
+        // Hide host controls completely when physical dice mode and not host's turn
         if (usePhysicalDice && !isMyTurn) {
-          document.getElementById('toggleModeBtn').style.display = 'none';
-          document.getElementById('nextTurnBtn').style.display = 'none';
-          document.getElementById('nextRoundBtn').style.display = 'none';
-          document.querySelector('#hostControls .btn-danger').style.display = 'none'; // Undo button
+          document.getElementById('hostControls').style.display = 'none';
         } else {
+          document.getElementById('hostControls').style.display = 'flex';
           document.getElementById('toggleModeBtn').style.display = 'block';
           document.querySelector('#hostControls .btn-danger').style.display = 'block'; // Undo button
           
