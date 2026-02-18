@@ -9,12 +9,13 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html {
       overscroll-behavior: auto;
+      height: 100dvh;
     }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      height: 100vh;
+      min-height: 100dvh;
+      height: 100dvh;
       padding: 10px;
       color: #333;
       display: flex;
@@ -359,6 +360,7 @@
     
     .host-controls {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       justify-content: center;
       margin-top: 15px;
@@ -513,11 +515,6 @@
         <div class="players-grid" id="playerCards"></div>
       </div>
       
-      <!-- Host dice mode toggle (always visible to host during game) -->
-      <div id="hostDiceToggle" style="display: none; text-align: center; margin: 10px 0; padding: 10px; background: #f3f4f6; border-radius: 8px; flex-shrink: 0;">
-        <button class="btn-secondary" onclick="toggleInputMode()" id="toggleModeBtn">Use Physical Dice</button>
-      </div>
-      
       <div class="action-area">
         <!-- Host physical dice input area (shown when it's NOT host's turn but physical dice enabled) -->
         <div id="hostPhysicalInputArea" style="display: none;">
@@ -540,6 +537,7 @@
       </div>
       
       <div class="host-controls" id="hostControls" style="display: none;">
+        <button class="btn-secondary" onclick="toggleInputMode()" id="toggleModeBtn" style="display: none;">Use Physical Dice</button>
         <button class="btn-secondary" onclick="nextTurn()" id="nextTurnBtn">Next Turn →</button>
         <button class="btn-success" onclick="nextTurn()" id="nextRoundBtn" style="display: none;">Start Next Round →</button>
         <button class="btn-danger" onclick="undo()">↶ Undo</button>
@@ -724,7 +722,6 @@
       
       const usePhysicalDice = gameState.gameState.usePhysicalDice;
       const toggleBtn = document.getElementById('toggleModeBtn');
-      const hostToggleArea = document.getElementById('hostDiceToggle');
       
       if (!toggleBtn) return;
       
@@ -736,8 +733,10 @@
       }
       
       // Show toggle for host only during active game
-      if (hostToggleArea) {
-        hostToggleArea.style.display = (isHost && gameState.gameState.status === 'playing') ? 'block' : 'none';
+      if (isHost && gameState.gameState.status === 'playing') {
+        toggleBtn.style.display = 'block';
+      } else {
+        toggleBtn.style.display = 'none';
       }
     }
 
@@ -1186,30 +1185,33 @@
       document.getElementById('rollButtonArea').style.display = canRoll ? 'block' : 'none';
       document.getElementById('bankArea').style.display = canBank ? 'block' : 'none';
       
-      // Update input mode for player's turn
-      if (canRoll) {
-        const virtualArea = document.getElementById('virtualDiceArea');
-        const physicalArea = document.getElementById('physicalDiceArea');
-        const physicalHost = document.getElementById('physicalDiceHost');
-        const physicalPlayer = document.getElementById('physicalDicePlayer');
+      // Always update virtual/physical dice visibility based on mode
+      const virtualArea = document.getElementById('virtualDiceArea');
+      const physicalArea = document.getElementById('physicalDiceArea');
+      const physicalHost = document.getElementById('physicalDiceHost');
+      const physicalPlayer = document.getElementById('physicalDicePlayer');
+      
+      if (usePhysicalDice) {
+        virtualArea.style.display = 'none';
+        physicalArea.style.display = 'block';
         
-        if (usePhysicalDice) {
-          virtualArea.style.display = 'none';
-          physicalArea.style.display = 'block';
-          
-          if (isHost) {
-            physicalHost.style.display = 'block';
-            physicalPlayer.style.display = 'none';
+        if (isHost) {
+          physicalHost.style.display = 'block';
+          physicalPlayer.style.display = 'none';
+          if (canRoll) {
             renderDiceButtons();
-          } else {
-            physicalHost.style.display = 'none';
-            physicalPlayer.style.display = 'block';
           }
         } else {
-          virtualArea.style.display = 'block';
-          physicalArea.style.display = 'none';
+          physicalHost.style.display = 'none';
+          physicalPlayer.style.display = 'block';
         }
-        
+      } else {
+        virtualArea.style.display = 'block';
+        physicalArea.style.display = 'none';
+      }
+      
+      // Update input mode for player's turn
+      if (canRoll) {
         // Start cooldown timer if there's a cooldown active
         if (room.gameState.rollCooldownUntil && Date.now() < room.gameState.rollCooldownUntil) {
           startCooldownTimer();
