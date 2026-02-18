@@ -269,7 +269,7 @@ io.on('connection', (socket) => {
       return;
     }
     
-    // Check cooldown
+    // Check cooldown (only for virtual dice)
     if (room.gameState.rollCooldownUntil && Date.now() < room.gameState.rollCooldownUntil) {
       socket.emit('error', { message: 'Please wait before rolling again' });
       return;
@@ -290,7 +290,7 @@ io.on('connection', (socket) => {
     room.gameState.sharedRoundScore = newScore;
     room.gameState.rollCount++;
     
-    // Set cooldown for 3 seconds
+    // Set cooldown for 3 seconds (only for virtual dice)
     room.gameState.rollCooldownUntil = Date.now() + 3000;
     
     if (roundDead) {
@@ -331,11 +331,7 @@ io.on('connection', (socket) => {
       return;
     }
     
-    // Check cooldown
-    if (room.gameState.rollCooldownUntil && Date.now() < room.gameState.rollCooldownUntil) {
-      socket.emit('error', { message: 'Please wait before rolling again' });
-      return;
-    }
+    // No cooldown for physical dice
     
     saveHistory(room);
     
@@ -376,8 +372,7 @@ io.on('connection', (socket) => {
     room.gameState.sharedRoundScore = newScore;
     room.gameState.rollCount++;
     
-    // Set cooldown for 3 seconds
-    room.gameState.rollCooldownUntil = Date.now() + 3000;
+    // No cooldown for physical dice
     
     if (roundDead) {
       room.gameState.roundActive = false;
