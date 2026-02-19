@@ -83,6 +83,7 @@
     #waitingScreen {
       display: flex;
       flex-direction: column;
+      overflow-y: auto;
     }
     #waitingScreen:not(.active) {
       display: none !important;
@@ -102,6 +103,7 @@
     #endScreen {
       display: flex;
       flex-direction: column;
+      overflow-y: auto;
     }
     #endScreen:not(.active) {
       display: none !important;
@@ -166,6 +168,7 @@
       padding: 20px;
       background: #f3f4f6;
       border-radius: 10px;
+      flex-shrink: 0;
     }
     .room-code h2 { color: #667eea; font-size: 3em; letter-spacing: 5px; }
     .player-list {
@@ -173,6 +176,9 @@
       padding: 20px;
       background: #f9fafb;
       border-radius: 10px;
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
     }
     .player-item {
       padding: 10px;
@@ -221,6 +227,7 @@
       background: #f3f4f6;
       border-radius: 10px;
       text-align: center;
+      flex-shrink: 0;
     }
     .rounds-config label {
       display: block;
@@ -232,6 +239,11 @@
       width: 100px;
       text-align: center;
       font-size: 1.5em;
+    }
+    
+    .waiting-footer {
+      flex-shrink: 0;
+      margin-top: auto;
     }
     
     /* Game Screen */
@@ -426,10 +438,14 @@
       border-radius: 10px;
       margin: 20px 0;
       color: white;
+      flex-shrink: 0;
     }
     .winner-announcement h2 { font-size: 2.5em; margin-bottom: 10px; }
     .final-scores {
       margin: 20px 0;
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
     }
     .score-item {
       padding: 15px;
@@ -499,8 +515,10 @@
         <h3 style="margin-bottom: 15px;">Players</h3>
         <div id="waitingPlayerList"></div>
       </div>
-      <div style="text-align: center;">
-        <button id="startGameBtn" class="btn-success" onclick="startGame()" style="display: none;">Start Game</button>
+      <div class="waiting-footer">
+        <div style="text-align: center;">
+          <button id="startGameBtn" class="btn-success" onclick="startGame()" style="display: none;">Start Game</button>
+        </div>
       </div>
     </div>
     
@@ -593,7 +611,7 @@
         <h2 id="winnerName">Winner</h2>
       </div>
       <div class="final-scores" id="finalScores"></div>
-      <div style="text-align: center; margin-top: 20px;">
+      <div style="text-align: center; margin-top: 20px; flex-shrink: 0;">
         <button class="btn-primary" onclick="location.reload()">New Game</button>
       </div>
     </div>
