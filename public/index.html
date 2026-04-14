@@ -539,29 +539,7 @@
         <!-- Roll button area moved here -->
         <div class="roll-button-area" id="rollButtonArea" style="display: none;">
           <!-- Virtual dice roll -->
-          <div id="virtualDiceArea">
-            <button class="btn-primary" onclick="rollDice()" id="rollButton" style="font-size: 1.5em; padding: 20px 40px;">🎲 Roll Dice</button>
-          </div>
-          
-          <!-- Physical dice prompt -->
-          <div id="physicalDiceArea" style="display: none;">
-            <!-- For host: show input buttons -->
-            <div id="physicalDiceHost" style="display: none;">
-              <div style="padding: 15px; background: white; border-radius: 8px; border: 2px dashed #667eea;">
-                <p style="font-size: 1.1em; color: #667eea; margin-bottom: 10px; font-weight: bold;">Enter the dice roll:</p>
-                <div class="dice-buttons" id="diceButtons"></div>
-              </div>
-            </div>
-            
-            <!-- For regular players: simple message -->
-            <div id="physicalDicePlayer" style="display: none;">
-              <div style="padding: 30px; background: white; border-radius: 8px; border: 3px solid #667eea; text-align: center;">
-                <p style="font-size: 1.8em; color: #667eea; margin-bottom: 8px;">🎲</p>
-                <p style="font-size: 1.3em; color: #667eea; font-weight: bold; margin-bottom: 8px;">Roll the Dice!</p>
-                <p style="color: #6b7280; font-size: 1em;">Wait for the host to enter your result</p>
-              </div>
-            </div>
-          </div>
+          <button class="btn-primary" onclick="rollDice()" id="rollButton" style="font-size: 1.5em; padding: 20px 40px;">🎲 Roll Dice</button>
         </div>
       </div>
       
@@ -586,7 +564,6 @@
       </div>
       
       <div class="host-controls" id="hostControls" style="display: none;">
-        <button class="btn-secondary" onclick="toggleInputMode()" id="toggleModeBtn" style="display: none;">Use Physical Dice</button>
         <button class="btn-secondary" onclick="nextTurn()" id="nextTurnBtn">Next Turn →</button>
         <button class="btn-success" onclick="nextTurn()" id="nextRoundBtn" style="display: none;">Start Next Round →</button>
         <button class="btn-danger" onclick="undo()">↶ Undo</button>
@@ -1259,39 +1236,6 @@
       }
       
       document.getElementById('bankArea').style.display = canBank ? 'block' : 'none';
-      
-      // Always update virtual/physical dice visibility based on mode
-      const virtualArea = document.getElementById('virtualDiceArea');
-      const physicalArea = document.getElementById('physicalDiceArea');
-      const physicalHost = document.getElementById('physicalDiceHost');
-      const physicalPlayer = document.getElementById('physicalDicePlayer');
-      
-      if (usePhysicalDice) {
-        virtualArea.style.display = 'none';
-        physicalArea.style.display = 'block';
-        
-        if (isHost) {
-          physicalHost.style.display = 'block';
-          physicalPlayer.style.display = 'none';
-          if (canRoll || !isMyTurn) {
-            renderDiceButtons();
-          }
-          
-          // Update the text to show whose turn it is
-          const physicalHostText = physicalHost.querySelector('p');
-          if (physicalHostText && !isMyTurn && room.gameState.roundActive) {
-            physicalHostText.textContent = `${currentPlayer.name}'s Turn - Enter their dice roll:`;
-          } else if (physicalHostText) {
-            physicalHostText.textContent = 'Enter the dice roll:';
-          }
-        } else {
-          physicalHost.style.display = 'none';
-          physicalPlayer.style.display = 'block';
-        }
-      } else {
-        virtualArea.style.display = 'block';
-        physicalArea.style.display = 'none';
-      }
       
       // Update input mode for player's turn
       if (canRoll) {
