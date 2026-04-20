@@ -32,8 +32,7 @@ function createGameState(totalRounds = 20) {
     rollCount: 0,
     currentTurnIndex: 0,
     lastRoll: null,
-    usePhysicalDice: false,
-    rollCooldownUntil: null
+    usePhysicalDice: false
   };
 }
 
@@ -269,12 +268,6 @@ io.on('connection', (socket) => {
       return;
     }
     
-    // Check cooldown (only for virtual dice)
-    if (room.gameState.rollCooldownUntil && Date.now() < room.gameState.rollCooldownUntil) {
-      socket.emit('error', { message: 'Please wait before rolling again' });
-      return;
-    }
-    
     saveHistory(room);
     
     // Roll two dice
@@ -289,9 +282,6 @@ io.on('connection', (socket) => {
     
     room.gameState.sharedRoundScore = newScore;
     room.gameState.rollCount++;
-    
-    // Set cooldown for 3 seconds (only for virtual dice)
-    room.gameState.rollCooldownUntil = Date.now() + 3000;
     
     if (roundDead) {
       room.gameState.roundActive = false;
@@ -331,8 +321,6 @@ io.on('connection', (socket) => {
       return;
     }
     
-    // No cooldown for physical dice
-    
     saveHistory(room);
     
     // Mark player as using physical dice
@@ -371,8 +359,6 @@ io.on('connection', (socket) => {
     
     room.gameState.sharedRoundScore = newScore;
     room.gameState.rollCount++;
-    
-    // No cooldown for physical dice
     
     if (roundDead) {
       room.gameState.roundActive = false;
