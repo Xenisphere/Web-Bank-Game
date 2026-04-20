@@ -7,46 +7,20 @@
   <script src="/socket.io/socket.io.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html {
-      overscroll-behavior: auto;
-      height: 100dvh;
-    }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100dvh;
-      height: 100dvh;
-      padding: 10px;
+      min-height: 100vh;
+      padding: 20px;
       color: #333;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: auto;
-      overscroll-behavior-y: auto;
     }
     .container {
       max-width: 800px;
-      width: 100%;
-      height: 100%;
-      max-height: 100%;
       margin: 0 auto;
       background: white;
       border-radius: 20px;
-      padding: 20px;
+      padding: 30px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    @media (min-width: 768px) {
-      body {
-        padding: 20px;
-      }
-      .container {
-        height: 95vh;
-        max-height: 900px;
-        padding: 30px;
-      }
     }
     h1 {
       text-align: center;
@@ -54,67 +28,15 @@
       margin-bottom: 30px;
       font-size: 2.5em;
     }
-    h1.in-game {
-      margin-bottom: 15px;
-      font-size: 2em;
-    }
-    .screen { 
-      display: none;
-    }
-    .screen.active { 
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      overflow: hidden;
-    }
+    .screen { display: none; }
+    .screen.active { display: block; }
     
     /* Join/Create Screen */
-    #joinScreen {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-    #joinScreen:not(.active) {
-      display: none !important;
-    }
-    
-    /* Waiting Screen */
-    #waitingScreen {
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-    }
-    #waitingScreen:not(.active) {
-      display: none !important;
-    }
-    
-    /* Reconnect Screen */
-    #reconnectScreen {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    #reconnectScreen:not(.active) {
-      display: none !important;
-    }
-    
-    /* End Screen */
-    #endScreen {
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-    }
-    #endScreen:not(.active) {
-      display: none !important;
-    }
-    
     .join-controls {
       display: flex;
       flex-direction: column;
       gap: 15px;
       max-width: 400px;
-      width: 100%;
       margin: 0 auto;
     }
     input {
@@ -135,9 +57,6 @@
       cursor: pointer;
       transition: all 0.3s;
       color: white;
-      pointer-events: auto;
-      position: relative;
-      z-index: 1;
     }
     button:disabled {
       opacity: 0.4;
@@ -168,7 +87,6 @@
       padding: 20px;
       background: #f3f4f6;
       border-radius: 10px;
-      flex-shrink: 0;
     }
     .room-code h2 { color: #667eea; font-size: 3em; letter-spacing: 5px; }
     .player-list {
@@ -176,9 +94,6 @@
       padding: 20px;
       background: #f9fafb;
       border-radius: 10px;
-      flex: 1;
-      overflow-y: auto;
-      min-height: 0;
     }
     .player-item {
       padding: 10px;
@@ -227,7 +142,6 @@
       background: #f3f4f6;
       border-radius: 10px;
       text-align: center;
-      flex-shrink: 0;
     }
     .rounds-config label {
       display: block;
@@ -241,26 +155,13 @@
       font-size: 1.5em;
     }
     
-    .waiting-footer {
-      flex-shrink: 0;
-      margin-top: auto;
-    }
-    
     /* Game Screen */
-    #gameScreen {
-      display: flex;
-      flex-direction: column;
-    }
-    #gameScreen:not(.active) {
-      display: none !important;
-    }
     .game-header {
       text-align: center;
       margin-bottom: 15px;
       padding: 15px;
       background: #f3f4f6;
       border-radius: 10px;
-      flex-shrink: 0;
     }
     .round-info { font-size: 1em; color: #6b7280; margin-bottom: 8px; }
     .shared-score {
@@ -270,11 +171,6 @@
       text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     }
     .roll-count { color: #6b7280; margin-top: 5px; font-size: 0.9em; }
-    
-    .roll-button-area {
-      margin-top: 15px;
-      text-align: center;
-    }
     
     .last-roll {
       margin-top: 10px;
@@ -318,7 +214,6 @@
       gap: 8px;
       justify-content: center;
       margin-bottom: 10px;
-      flex-shrink: 0;
     }
     .sort-btn {
       padding: 6px 12px;
@@ -339,11 +234,10 @@
     }
     
     .players-scroll-container {
-      flex: 1;
+      max-height: 240px;
       overflow-y: auto;
       margin: 10px 0;
       padding-right: 5px;
-      min-height: 0;
     }
     
     .players-scroll-container::-webkit-scrollbar {
@@ -401,7 +295,6 @@
       background: #f3f4f6;
       border-radius: 10px;
       text-align: center;
-      flex-shrink: 0;
     }
     
     .dice-buttons {
@@ -414,11 +307,9 @@
     
     .host-controls {
       display: flex;
-      flex-wrap: wrap;
       gap: 8px;
       justify-content: center;
       margin-top: 15px;
-      flex-shrink: 0;
     }
     
     .error-message {
@@ -438,14 +329,10 @@
       border-radius: 10px;
       margin: 20px 0;
       color: white;
-      flex-shrink: 0;
     }
     .winner-announcement h2 { font-size: 2.5em; margin-bottom: 10px; }
     .final-scores {
       margin: 20px 0;
-      flex: 1;
-      overflow-y: auto;
-      min-height: 0;
     }
     .score-item {
       padding: 15px;
@@ -466,7 +353,7 @@
 </head>
 <body>
   <div class="container">
-    <h1 id="gameTitle">🎲 Bank</h1>
+    <h1>🎲 Bank</h1>
     
     <!-- Join/Create Screen -->
     <div id="joinScreen" class="screen active">
@@ -515,10 +402,8 @@
         <h3 style="margin-bottom: 15px;">Players</h3>
         <div id="waitingPlayerList"></div>
       </div>
-      <div class="waiting-footer">
-        <div style="text-align: center;">
-          <button id="startGameBtn" class="btn-success" onclick="startGame()" style="display: none;">Start Game</button>
-        </div>
+      <div style="text-align: center;">
+        <button id="startGameBtn" class="btn-success" onclick="startGame()" style="display: none;">Start Game</button>
       </div>
     </div>
     
@@ -535,12 +420,6 @@
           <div class="dice-separator">=</div>
           <div class="dice-total" id="diceTotal">?</div>
         </div>
-        
-        <!-- Roll button area moved here -->
-        <div class="roll-button-area" id="rollButtonArea" style="display: none;">
-          <!-- Virtual dice roll -->
-          <button class="btn-primary" onclick="rollDice()" id="rollButton" style="font-size: 1.5em; padding: 20px 40px;">🎲 Roll Dice</button>
-        </div>
       </div>
       
       <div class="sort-controls">
@@ -553,7 +432,52 @@
         <div class="players-grid" id="playerCards"></div>
       </div>
       
+      <!-- Host dice mode toggle (always visible to host during game) -->
+      <div id="hostDiceToggle" style="display: none; text-align: center; margin: 10px 0; padding: 10px; background: #f3f4f6; border-radius: 8px;">
+        <button class="btn-secondary" onclick="toggleInputMode()" id="toggleModeBtn">Use Physical Dice</button>
+      </div>
+      
       <div class="action-area">
+        <div id="yourTurnArea" style="display: none;">
+          <h3>Your Turn!</h3>
+          
+          <!-- Virtual dice roll -->
+          <div id="virtualDiceArea">
+            <button class="btn-primary" onclick="rollDice()" id="rollButton" style="font-size: 1.5em; padding: 20px 40px;">🎲 Roll Dice</button>
+          </div>
+          
+          <!-- Physical dice prompt -->
+          <div id="physicalDiceArea" style="display: none;">
+            <!-- For host: show input buttons -->
+            <div id="physicalDiceHost" style="display: none;">
+              <div style="padding: 15px; background: white; border-radius: 8px; border: 2px dashed #667eea;">
+                <p style="font-size: 1.1em; color: #667eea; margin-bottom: 10px; font-weight: bold;">Enter the dice roll:</p>
+                <div class="dice-buttons" id="diceButtons"></div>
+              </div>
+            </div>
+            
+            <!-- For regular players: simple message -->
+            <div id="physicalDicePlayer" style="display: none;">
+              <div style="padding: 30px; background: white; border-radius: 8px; border: 3px solid #667eea; text-align: center;">
+                <p style="font-size: 1.8em; color: #667eea; margin-bottom: 8px;">🎲</p>
+                <p style="font-size: 1.3em; color: #667eea; font-weight: bold; margin-bottom: 8px;">Roll the Dice!</p>
+                <p style="color: #6b7280; font-size: 1em;">Wait for the host to enter your result</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Host physical dice input area (shown when it's NOT host's turn but physical dice enabled) -->
+        <div id="hostPhysicalInputArea" style="display: none;">
+          <div style="padding: 15px; background: white; border-radius: 8px; border: 2px solid #667eea; margin-bottom: 10px;">
+            <p style="font-size: 1.1em; color: #667eea; margin-bottom: 8px; font-weight: bold;">
+              <span id="currentPlayerForHost"></span>'s Turn
+            </p>
+            <p style="color: #6b7280; margin-bottom: 10px; font-size: 0.9em;">Enter their dice roll:</p>
+            <div class="dice-buttons" id="diceButtonsForOthers"></div>
+          </div>
+        </div>
+        
         <div id="bankArea" style="display: none;">
           <button class="btn-success" onclick="bank()">🏦 Bank Now</button>
         </div>
@@ -577,7 +501,7 @@
         <h2 id="winnerName">Winner</h2>
       </div>
       <div class="final-scores" id="finalScores"></div>
-      <div style="text-align: center; margin-top: 20px; flex-shrink: 0;">
+      <div style="text-align: center; margin-top: 20px;">
         <button class="btn-primary" onclick="location.reload()">New Game</button>
       </div>
     </div>
@@ -662,25 +586,14 @@
       if (!gameState || !gameState.gameState.rollCooldownUntil) {
         clearInterval(cooldownInterval);
         cooldownInterval = null;
-        const rollButton = document.getElementById('rollButton');
-        if (rollButton) {
-          rollButton.textContent = '🎲 Roll Dice';
-          rollButton.disabled = false;
-        }
         return;
       }
 
       const rollButton = document.getElementById('rollButton');
-      if (!rollButton) {
-        clearInterval(cooldownInterval);
-        cooldownInterval = null;
-        return;
-      }
-      
       const now = Date.now();
       const timeLeft = gameState.gameState.rollCooldownUntil - now;
 
-      if (timeLeft > 100) { // Add 100ms buffer
+      if (timeLeft > 0) {
         const seconds = Math.ceil(timeLeft / 1000);
         rollButton.textContent = `${seconds}`;
         rollButton.disabled = true;
@@ -689,10 +602,6 @@
         rollButton.disabled = false;
         clearInterval(cooldownInterval);
         cooldownInterval = null;
-        // Clear the cooldown from state
-        if (gameState && gameState.gameState) {
-          gameState.gameState.rollCooldownUntil = null;
-        }
       }
     }
 
@@ -757,6 +666,7 @@
       
       const usePhysicalDice = gameState.gameState.usePhysicalDice;
       const toggleBtn = document.getElementById('toggleModeBtn');
+      const hostToggleArea = document.getElementById('hostDiceToggle');
       
       if (!toggleBtn) return;
       
@@ -768,10 +678,8 @@
       }
       
       // Show toggle for host only during active game
-      if (isHost && gameState.gameState.status === 'playing') {
-        toggleBtn.style.display = 'block';
-      } else {
-        toggleBtn.style.display = 'none';
+      if (hostToggleArea) {
+        hostToggleArea.style.display = (isHost && gameState.gameState.status === 'playing') ? 'block' : 'none';
       }
     }
 
@@ -885,6 +793,11 @@
         updateWaitingRoom(room);
       } else if (room.gameState.status === 'playing') {
         updateGameScreen(room);
+        
+        // Start cooldown timer if there's a cooldown
+        if (room.gameState.rollCooldownUntil) {
+          startCooldownTimer();
+        }
       } else if (room.gameState.status === 'finished') {
         updateEndScreen(room);
       }
@@ -905,10 +818,6 @@
     // UI update functions
     function updateWaitingRoom(room) {
       showScreen('waitingScreen');
-      
-      // Show title on waiting screen
-      document.getElementById('gameTitle').style.display = 'block';
-      
       document.getElementById('displayRoomCode').textContent = room.roomCode;
       document.getElementById('totalRoundsInput').value = room.gameState.totalRounds;
       
@@ -1130,15 +1039,6 @@
     function updateGameScreen(room) {
       showScreen('gameScreen');
       
-      // Hide title during game
-      document.getElementById('gameTitle').style.display = 'none';
-      
-      // Clear existing cooldown timer
-      if (cooldownInterval) {
-        clearInterval(cooldownInterval);
-        cooldownInterval = null;
-      }
-      
       document.getElementById('currentRound').textContent = room.gameState.currentRound;
       document.getElementById('totalRounds').textContent = room.gameState.totalRounds;
       document.getElementById('sharedScore').textContent = room.gameState.sharedRoundScore;
@@ -1216,32 +1116,44 @@
                       room.gameState.rollCount >= 3 && 
                       room.gameState.roundActive;
       
-      // Show/hide roll button area and bank area
-      const rollButtonArea = document.getElementById('rollButtonArea');
-      const rollButton = document.getElementById('rollButton');
-      
-      // Always show roll button area
-      rollButtonArea.style.display = 'block';
-      
-      // Enable/disable and style based on turn
-      if (canRoll) {
-        rollButton.disabled = false;
-        rollButton.style.opacity = '1';
-        rollButton.style.cursor = 'pointer';
-      } else {
-        rollButton.disabled = true;
-        rollButton.style.opacity = '0.4';
-        rollButton.style.cursor = 'not-allowed';
-        rollButton.textContent = '🎲 Roll Dice';
-      }
-      
+      // Show/hide main action areas
+      document.getElementById('yourTurnArea').style.display = canRoll ? 'block' : 'none';
       document.getElementById('bankArea').style.display = canBank ? 'block' : 'none';
       
       // Update input mode for player's turn
       if (canRoll) {
-        // Start cooldown timer if there's a cooldown active
-        if (room.gameState.rollCooldownUntil && Date.now() < room.gameState.rollCooldownUntil) {
-          startCooldownTimer();
+        const virtualArea = document.getElementById('virtualDiceArea');
+        const physicalArea = document.getElementById('physicalDiceArea');
+        const physicalHost = document.getElementById('physicalDiceHost');
+        const physicalPlayer = document.getElementById('physicalDicePlayer');
+        
+        if (usePhysicalDice) {
+          virtualArea.style.display = 'none';
+          physicalArea.style.display = 'block';
+          
+          if (isHost) {
+            physicalHost.style.display = 'block';
+            physicalPlayer.style.display = 'none';
+            renderDiceButtons();
+          } else {
+            physicalHost.style.display = 'none';
+            physicalPlayer.style.display = 'block';
+          }
+        } else {
+          virtualArea.style.display = 'block';
+          physicalArea.style.display = 'none';
+        }
+      }
+      
+      // Host physical dice input area (when it's NOT their turn but physical mode is on)
+      const hostPhysicalInputArea = document.getElementById('hostPhysicalInputArea');
+      if (hostPhysicalInputArea) {
+        const showHostInput = isHost && !isMyTurn && usePhysicalDice && room.gameState.roundActive;
+        hostPhysicalInputArea.style.display = showHostInput ? 'block' : 'none';
+        
+        if (showHostInput) {
+          document.getElementById('currentPlayerForHost').textContent = currentPlayer.name;
+          renderDiceButtons();
         }
       }
       
@@ -1263,24 +1175,17 @@
       
       // Host controls
       if (isHost) {
-        // Hide host controls completely when physical dice mode and not host's turn
-        if (usePhysicalDice && !isMyTurn) {
-          document.getElementById('hostControls').style.display = 'none';
+        document.getElementById('hostControls').style.display = 'flex';
+        
+        // Show appropriate button based on round state
+        if (!room.gameState.roundActive) {
+          // Round is over - show "Start Next Round" button
+          document.getElementById('nextTurnBtn').style.display = 'none';
+          document.getElementById('nextRoundBtn').style.display = 'block';
         } else {
-          document.getElementById('hostControls').style.display = 'flex';
-          document.getElementById('toggleModeBtn').style.display = 'block';
-          document.querySelector('#hostControls .btn-danger').style.display = 'block'; // Undo button
-          
-          // Show appropriate button based on round state
-          if (!room.gameState.roundActive) {
-            // Round is over - show "Start Next Round" button
-            document.getElementById('nextTurnBtn').style.display = 'none';
-            document.getElementById('nextRoundBtn').style.display = 'block';
-          } else {
-            // Round is active - show "Next Turn" button
-            document.getElementById('nextTurnBtn').style.display = 'block';
-            document.getElementById('nextRoundBtn').style.display = 'none';
-          }
+          // Round is active - show "Next Turn" button
+          document.getElementById('nextTurnBtn').style.display = 'block';
+          document.getElementById('nextRoundBtn').style.display = 'none';
         }
       } else {
         document.getElementById('hostControls').style.display = 'none';
@@ -1289,9 +1194,6 @@
 
     function updateEndScreen(room) {
       showScreen('endScreen');
-      
-      // Show title on end screen
-      document.getElementById('gameTitle').style.display = 'block';
       
       const sorted = [...room.players].sort((a, b) => b.lockedScore - a.lockedScore);
       document.getElementById('winnerName').textContent = sorted[0].name + ' Wins!';
